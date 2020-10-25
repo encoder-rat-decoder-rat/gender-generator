@@ -1,0 +1,23 @@
+{
+  "name": "gender-generator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/encoder-rat-decoder-rat/gender-generator.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/encoder-rat-decoder-rat/gender-generator/issues"
+  },
+  "homepage": "https://encoder-rat-decoder-rat.github.io/gender-generator/",
+  "dependencies": {
+    "d3-force": "^2.1.1",
+    "venn.js": "^0.2.20"
+  }
+}
