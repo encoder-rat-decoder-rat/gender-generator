@@ -37,39 +37,20 @@ var width = document.documentElement.clientWidth,
 var spacing = 30;
 var theta = Math.PI / 3;
 
-//Create scale
-// scales are for mapping, eg calc positions based on data
-// var xScale = scaleLinear()
-//   .domain([-1.25, 1.25])
-//   .range([-width / 2, width / 2]);
 
-//Create the circles that will move out and in the center circle
-// lower value for prototype
-// bump this to like 100 for a good time
-var steps = 30;
-var nodes = range(steps).map(function(d) {
-  return {
-    index: d,
-    x: Math.random() * width,
-    y: Math.random() * height, 
-    r: Math.floor(Math.random() * 50 + 15),
-    color: COLORS[d % COLORS.length],
-  }
-})
-
-  // gravity: how they overlap i think / forceManyBody
-  // forceManyBody: negative flies apart, positive sticks together
-  // setting this to 100 is fucking wild and it's good
-forceSimulation(nodes)
-  .force("charge", forceManyBody().strength(10))
-  .force("center", forceCenter(width / 2, height / 2))
-  .force(
-    "collision",
-    forceCollide().radius(function (d) {
-      return d.r;
-    })
-  )
-  .on("tick", update)
+//   // gravity: how they overlap i think / forceManyBody
+//   // forceManyBody: negative flies apart, positive sticks together
+//   // setting this to 100 is fucking wild and it's good
+// forceSimulation(nodes)
+//   .force("charge", forceManyBody().strength(10))
+//   .force("center", forceCenter(width / 2, height / 2))
+//   .force(
+//     "collision",
+//     forceCollide().radius(function (d) {
+//       return d.r;
+//     })
+//   )
+//   .on("tick", update)
 
 draw();
 
@@ -157,15 +138,15 @@ function update() {
 // fixed loop ending issue so like it's all good
 // i think this somehow extends the animation so not sure if data is updating
 
-timer(function(t) {
-  theta = theta - 0.0005;
-  svg.selectAll(".flyCircle")
-    .attr("transform", function(d,i) {
-       var radius = spacing * Math.sqrt(i),
-           angle = i * theta;
-       return "translate(" + (radius * Math.cos(angle)) + "," + (radius * Math.sin(angle)) + ")"
-    })     
-});
+// timer(function(t) {
+//   theta = theta - 0.0005;
+//   svg.selectAll(".flyCircle")
+//     .attr("transform", function(d,i) {
+//        var radius = spacing * Math.sqrt(i),
+//            angle = i * theta;
+//        return "translate(" + (radius * Math.cos(angle)) + "," + (radius * Math.sin(angle)) + ")"
+//     })     
+// });
 
 // redraws on resize to fit browser window
 function draw() {
