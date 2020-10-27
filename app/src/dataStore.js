@@ -22,7 +22,9 @@ export function categorySort(a, b) {
 export function serializeCategories() {
   const serializedCategories = baseCategories.concat(categorySets);
   serializedCategories.sort(categorySort);
-  return serializedCategories;
+
+  // Only pass categories with overlaps
+  return serializedCategories.filter(({ size: setSize }) => setSize);
 }
 
 /**
@@ -46,9 +48,10 @@ export function addNewCategory(label, size) {
       Math.min(size, categorySet.size) *
       // Randomize the size of the overlap
       Math.random() *
+      0.6 *
       // TODO: Figure out how often we want overlaps
-      // Math.round(Math.random()) basically says we only get overlaps half the time
-      Math.round(Math.random()),
+      // Math.round(Math.random() * X) basically says we get overlaps less than half the time
+      Math.round(Math.random() * 0.78),
   });
 
   // Now duplicate the existing pair sets
