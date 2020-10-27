@@ -11,7 +11,17 @@ import {
   select,
   timer
 } from "d3";
-import colors from './colors-util.js'
+// import colors from './colors-util.js'
+import "./index.css";
+
+import { select } from "d3";
+
+import { VennDiagram } from "venn.js";
+
+import { serializeCategories, addNewCategory } from "./dataStore.js";
+
+import { createGooyFilter, colorCircles } from "./visuals.js";
+
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 /////////////////////////////// Reference ////////////////////////////////////
@@ -76,45 +86,35 @@ select(window).on("resize", draw);
 ///////////////////////////// Create filter ///////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-//SVG filter for the gooey effect
-//Code taken from http://tympanus.net/codrops/2015/03/10/creative-gooey-effects/
-var defs = svg.append("defs");
-var filter = defs.append("filter").attr("id", "gooeyCodeFilter");
-filter
-  .append("feGaussianBlur")
-  .attr("in", "SourceGraphic")
-  .attr("stdDeviation", "10")
-  //to fix safari: http://stackoverflow.com/questions/24295043/svg-gaussian-blur-in-safari-unexpectedly-lightens-image
-  .attr("color-interpolation-filters", "sRGB")
-  .attr("result", "blur");
-filter
-  .append("feColorMatrix")
-  .attr("in", "blur")
-  .attr("mode", "matrix")
-  .attr("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7")
-  .attr("result", "gooey");
-//If you want the end shapes to be exactly the same size as without the filter
-//add the feComposite below. However this will result in a less beautiful gooey effect
-//filter.append("feBlend")
-//  .attr("in","SourceGraphic")
-//  .attr("in2","gooey");
-//Instead of the feBlend, you can do feComposite. This will also place a sharp image on top
-//But it will result in smaller circles
-//filter.append("feComposite") //feBlend
-//  .attr("in","SourceGraphic")
-//  .attr("in2","gooey")
-//  .attr("operator","atop");
+
+var width = document.documentElement.clientWidth,
+  height = document.documentElement.clientHeight;
+
+// Generate the Chart
+const chart = VennDiagram().width(width).height(height).duration(2000);
+
+// Create the SVG that houses the chart
+const svg = select("body")
+  .append("svg")
+  .attr("width", width)
+  .attr("height", height);
+
+createGooyFilter(svg);
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////// Create circles //////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-var circleWrapper = svg
+// var circleWrapper = svg
+// The wrapper for all of the circles
+var vennWrapper = svg
   .append("g")
-  .attr("class", "circleWrapper")
+  .attr("class", "vennWrapper")
+  .attr("id", "vennWrapper")
   .style("filter", "url(#gooeyCodeFilter)");
 
+
 //Set up the circles
-var flyCircles = circleWrapper.selectAll(".flyCircle")
+var flyCircles = vennWrapper.selectAll(".flyCircle")
   .data(nodes)
   .enter().append("circle")
   .attr("class", "flyCircle")
@@ -183,4 +183,36 @@ function draw() {
   height = window.innerHeight
   svg.attr("width", width)
   .attr("height", height);
+/**
+ * This updates our data and recalls the colorizing function
+ */
+function updateData() {
+  // Fetch our data
+  const nodes = serializeCategories();
+  vennWrapper.datum(nodes).call(chart);
+
+  // Update all of the colors
+  colorCircles();
+
+  chart.orientation(chart.orientation() + Math.PI / 8);
+}
+
+/**
+ * A setInterval loop to update our page every second
+ */
+window.setInterval(updateData, 1000);
+
+/**
+ * Add a random circle
+ *
+ * @param      {Number}  [size=Math.random()*14+8]  The size
+ */
+function addOne(size = Math.random() * 14 + 8) {
+  addNewCategory("", size);
+}
+
+// Add a new category every 2.5 seconds up to 10
+for (let i = 0; i < 10; i += 1) {
+  window.setTimeout(addOne, 2500 * i);
+
 }
