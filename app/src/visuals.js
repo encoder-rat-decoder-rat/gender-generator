@@ -4,7 +4,7 @@ import { selectAll } from "d3";
 ///////////////////////////// Create filter ///////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-export function createGooyFilter(svg) {
+export function createGooeyFilter(svg) {
   //SVG filter for the gooey effect
   //Code taken from http://tympanus.net/codrops/2015/03/10/creative-gooey-effects/
   var defs = svg.append("defs");
@@ -37,29 +37,34 @@ export function createGooyFilter(svg) {
 
 // temporary pastel scheme
 export const COLORS = [
-  "#fce9f1",
-  "#FEC8D8",
-  "#FFDFD3",
-  "#e9fcf4",
-  "#feece8",
-  "#e8fafe",
-  "#ece8fe",
-  "#efbbcf",
-  "#ffd5cd",
-  "#FFCCDD",
-  "#FFFFCC",
-  "#FFDDCC",
-  "#CCDDEE",
-  "#FFCCCC",
-  "#CCDDCC",
-  "#CCFFCC",
-  "#FFEEFF",
-  "#CCCCFF",
-  "#CAEEFE",
-  "#FFFCE7",
-  "E1FFD4",
-  "#FCE1F8",
-  "DACBFE",
+  "#FEC8D8", // rose
+  "#FFCCCC", // rose
+  "#efbbcf", // rose
+  "#FEC8D8", // rose
+  "#FFCCDD", // rose
+  "#ffeeff", // dusty pink
+  "#feece8", // pale pink
+  "#FCE1F8", // pink
+  "#FFDFD3", // peache
+  "#FFDFD3", // peach
+  "#fce9f1", // peach
+  "#ffd5cd", // peach
+  "#FFDDCC", // peach
+  "#FFFFCC", // pale yellow
+  "#FFFCE7", // pale yellow
+  "#E1FFD4", // yellow green
+  "#F1FDCD", // pale chartreuse
+  "#CCFFCC", // mint green
+  "#cdfddd", // teal
+  "#e9fcf4", // green mint
+  "#e8fafe", // blue mint
+  "#CCDDEE", // smoke blue
+  "#CAEEFE", // bland blue
+  "#CCCCFF", // blue violet
+  "#DACBFE", // purple
+  "#E0BBE4", // violet
+  "#D291BC", // raspberry
+  "#ece8fe", // lavender
 ];
 
 export function colorCircles(wrapper) {

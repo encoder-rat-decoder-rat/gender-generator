@@ -1,26 +1,23 @@
 import {
   easeLinear,
-  easeCircleInOut,
+  // easeCircleInOut,
   forceCenter,
   forceCollide,
   forceManyBody,
   forceSimulation,
-  interpolateString,
+  // interpolateString,
   range,
-  scaleLinear,
+  // scaleLinear,
   select,
   timer
 } from "d3";
-// import colors from './colors-util.js'
 import "./index.css";
-
-import { select } from "d3";
 
 import { VennDiagram } from "venn.js";
 
 import { serializeCategories, addNewCategory } from "./dataStore.js";
 
-import { createGooyFilter, colorCircles } from "./visuals.js";
+import { createGooeyFilter, colorCircles, COLORS } from "./visuals.js";
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
@@ -33,22 +30,18 @@ import { createGooyFilter, colorCircles } from "./visuals.js";
 ///////////////////////////////////////////////////////////////////////////
 /////////////////////////////// Set-up ////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-var width = window.innerWidth,
- height = window.innerHeight
+
+var width = document.documentElement.clientWidth,
+  height = document.documentElement.clientHeight;
+
 var spacing = 30;
 var theta = Math.PI / 3;
 
-var svg = select("body")
-  .append("svg")
-  .attr("width", width)
-  .attr("height", height);
-
-
 //Create scale
 // scales are for mapping, eg calc positions based on data
-var xScale = scaleLinear()
-  .domain([-1.25, 1.25])
-  .range([-width / 2, width / 2]);
+// var xScale = scaleLinear()
+//   .domain([-1.25, 1.25])
+//   .range([-width / 2, width / 2]);
 
 //Create the circles that will move out and in the center circle
 // lower value for prototype
@@ -60,7 +53,7 @@ var nodes = range(steps).map(function(d) {
     x: Math.random() * width,
     y: Math.random() * height, 
     r: Math.floor(Math.random() * 50 + 15),
-    color: colors[d % colors.length],
+    color: COLORS[d % COLORS.length],
   }
 })
 
@@ -87,9 +80,6 @@ select(window).on("resize", draw);
 ///////////////////////////////////////////////////////////////////////////
 
 
-var width = document.documentElement.clientWidth,
-  height = document.documentElement.clientHeight;
-
 // Generate the Chart
 const chart = VennDiagram().width(width).height(height).duration(2000);
 
@@ -99,7 +89,7 @@ const svg = select("body")
   .attr("width", width)
   .attr("height", height);
 
-createGooyFilter(svg);
+createGooeyFilter(svg);
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////// Create circles //////////////////////////////
@@ -114,28 +104,29 @@ var vennWrapper = svg
 
 
 //Set up the circles
-var flyCircles = vennWrapper.selectAll(".flyCircle")
-  .data(nodes)
-  .enter().append("circle")
-  .attr("class", "flyCircle")
-  .style("fill", function (d) {
-    return d.color;
-  })
-  .attr("cy", function (d) {
-    return d.y;
-  })
-  .attr("cx", function (d) {
-    return d.x;
-  })
-    .attr("r", function (d) {
-    return d.r;
-  })
-  .call((enter) =>
-    enter
-      .transition()
-      .duration(500)
-  )
-  .on("end", update); 
+// add this only for more chaos
+// var flyCircles = vennWrapper.selectAll(".flyCircle")
+  // .data(nodes)
+  // .enter().append("circle")
+  // .attr("class", "flyCircle")
+  // .style("fill", function (d) {
+  //   return d.color;
+  // })
+  // .attr("cy", function (d) {
+  //   return d.y;
+  // })
+  // .attr("cx", function (d) {
+  //   return d.x;
+  // })
+  //   .attr("r", function (d) {
+  //   return d.r;
+  // })
+  // .call((enter) =>
+  //   enter
+  //     .transition()
+  //     .duration(500)
+  // )
+  // .on("end", update); 
 
 ///////////////////////////////////////////////////////////////////////////
 /////////////////////////////// Functions /////////////////////////////////
@@ -179,10 +170,11 @@ timer(function(t) {
 // redraws on resize to fit browser window
 function draw() {
  var svg = select("body")
-  width = window.innerWidth
-  height = window.innerHeight
+ var width = document.documentElement.clientWidth
+ var height = document.documentElement.clientHeight;
   svg.attr("width", width)
   .attr("height", height);
+}
 /**
  * This updates our data and recalls the colorizing function
  */
@@ -200,6 +192,7 @@ function updateData() {
 /**
  * A setInterval loop to update our page every second
  */
+
 window.setInterval(updateData, 1000);
 
 /**
@@ -214,5 +207,4 @@ function addOne(size = Math.random() * 14 + 8) {
 // Add a new category every 2.5 seconds up to 10
 for (let i = 0; i < 10; i += 1) {
   window.setTimeout(addOne, 2500 * i);
-
 }
