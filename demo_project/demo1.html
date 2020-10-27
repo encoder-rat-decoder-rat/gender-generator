@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="https://d3js.org/d3.v6.js"></script>
+
+<style>
+	circle {
+		fill: #ddd;
+	}
+</style>
+
+<body>
+	<svg width="760" height="140">
+		<g transform="translate(70, 70)">
+			<circle r="40" />
+			<circle r="40" cx="120" />
+			<circle r="40" cx="240" />
+			<circle r="40" cx="360" />
+			<circle r="40" cx="480" />
+		</g>
+	</svg>
+	<script>
+
+
+		var scores = [
+		{
+			"name": "Andy",
+			"score": 25
+		},
+		{
+			"name": "Beth",
+			"score": 39
+		},
+		{
+			"name": "Craig",
+			"score": 42
+		},
+		{
+			"name": "Diane",
+			"score": 35
+		},
+		{
+			"name": "Evelyn",
+			"score": 48
+		}
+		];
+
+
+		d3.selectAll('circle')
+		.data(scores)
+		.attr('r', function(d) {
+  	// console.log(d)
+  	return d.score;
+  });
+</script>
+</body>
+</html>

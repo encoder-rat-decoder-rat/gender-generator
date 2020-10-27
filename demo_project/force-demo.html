@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="https://d3js.org/d3.v6.js"></script>
+<script src="https://d3js.org/d3-dispatch.v2.min.js"></script>
+<script src="https://d3js.org/d3-quadtree.v2.min.js"></script>
+<script src="https://d3js.org/d3-timer.v2.min.js"></script>
+<script src="https://d3js.org/d3-force.v2.min.js"></script>
+<body>
+	<div id="content">
+		<svg width="300" height="300">
+		</svg>
+	</div>
+	<script>
+// create an array of objects
+// call forceSimulation, passing in the array of objects
+// add one or more force functions (e.g. forceManyBody, forceCenter, forceCollide) to the system
+// set up a callback function to update the element positions after each tick
+
+
+// 5 objects, calling the 2 force functions
+// forceManyBody causes elements to repel
+// forceCenter attracts elemnts towards a center point
+// ticked is a callback, called on iteration
+
+		var width = 300, height = 300
+		var nodes = [{}, {}, {}, {}, {}]
+
+		var simulation = d3.forceSimulation(nodes)
+		.force('charge', d3.forceManyBody())
+		.force('center', d3.forceCenter(width / 2, height / 2))
+		.on('tick', ticked);
+
+		// joins the nodes array to circle elements and updates their positions
+		function ticked() {
+
+			var u = d3.select('svg')
+			.selectAll('circle')
+			.data(nodes)
+
+			u.enter()
+			.append('circle')
+			.attr('r', 5)
+			.merge(u)
+			.attr('cx', function(d) {
+				return d.x
+			})
+			.attr('cy', function(d) {
+				return d.y
+			})
+
+			u.exit().remove()
+		}
+
+	</script>
+	</body>
+</html>
