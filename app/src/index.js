@@ -16,6 +16,7 @@ import { VennDiagram } from "venn.js";
 import { serializeCategories, addNewCategory } from "./dataStore.js";
 
 import { createGooeyFilter, colorCircles } from "./visuals.js";
+import { downloadAsPNG } from "./downloadFrame.js";
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
@@ -28,22 +29,42 @@ import { createGooeyFilter, colorCircles } from "./visuals.js";
 ///////////////////////////////////////////////////////////////////////////
 /////////////////////////////// Set-up ////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-/**
- * redraws on resize to fit browser window
- */
-function resizeChart() {
-  var width = window.innerWidth;
-  var height = window.innerHeight;
-  console.log("resize!!", width, height);
-  svg.attr("width", width).attr("height", height);
-  chart.width(width).height(height);
-}
 
 // Generate the Chart
 const chart = VennDiagram();
 
 // Create the SVG that houses the chart
 const svg = select("body").append("svg");
+
+// And add attributes so it can be downloaded
+// eslint-disable-next-line no-unused-expressions
+svg
+  .attr("version", 1.1)
+  .attr("xmlns", "http://www.w3.org/2000/svg")
+  .attr("id", "chartWrapper")
+  .attr("style", "background-color: #acd;")
+  .node().parentNode.innerHTML;
+
+/**
+ * redraws on resize to fit browser window
+ */
+function resizeChart() {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  svg.attr("width", width).attr("height", height);
+  chart.width(width).height(height);
+}
+
+// Set an interval loop to check if the ?frame query param is added to the url
+let currentParams = null;
+const checkFrame = () => {
+  const newParams = window.location.search;
+  if (currentParams !== newParams && newParams.includes("?frame")) {
+    downloadAsPNG(document.getElementById("chartWrapper"));
+  }
+  currentParams = newParams;
+};
+window.setInterval(checkFrame, 2000);
 
 resizeChart();
 select(window).on("resize", resizeChart);
@@ -57,9 +78,8 @@ createGooeyFilter(svg);
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////// Create circles //////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-// var circleWrapper = svg
 // The wrapper for all of the circles
-var vennWrapper = svg
+const vennWrapper = svg
   .append("g")
   .attr("class", "vennWrapper")
   .attr("id", "vennWrapper")

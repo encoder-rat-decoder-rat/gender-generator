@@ -11,10 +11,10 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #acd;
 }
 
 svg {
+  background-color: #acd;
   margin: 0;
   max-width: 100%;
   max-height: 100%;
