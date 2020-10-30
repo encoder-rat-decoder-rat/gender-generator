@@ -1,18 +1,21 @@
 {
   "files": {
-    "main.js": "/gender-generator/static/js/main.95a8afdf.chunk.js",
-    "main.js.map": "/gender-generator/static/js/main.95a8afdf.chunk.js.map",
+    "main.css": "/gender-generator/static/css/main.92582ff2.chunk.css",
+    "main.js": "/gender-generator/static/js/main.54db8077.chunk.js",
+    "main.js.map": "/gender-generator/static/js/main.54db8077.chunk.js.map",
     "runtime-main.js": "/gender-generator/static/js/runtime-main.3ad9f63d.js",
     "runtime-main.js.map": "/gender-generator/static/js/runtime-main.3ad9f63d.js.map",
-    "static/js/2.ee79a85a.chunk.js": "/gender-generator/static/js/2.ee79a85a.chunk.js",
-    "static/js/2.ee79a85a.chunk.js.map": "/gender-generator/static/js/2.ee79a85a.chunk.js.map",
+    "static/js/2.2c3f3d47.chunk.js": "/gender-generator/static/js/2.2c3f3d47.chunk.js",
+    "static/js/2.2c3f3d47.chunk.js.map": "/gender-generator/static/js/2.2c3f3d47.chunk.js.map",
     "index.html": "/gender-generator/index.html",
-    "precache-manifest.ea38587dc48705c2a0a294cce64161b8.js": "/gender-generator/precache-manifest.ea38587dc48705c2a0a294cce64161b8.js",
-    "service-worker.js": "/gender-generator/service-worker.js"
+    "precache-manifest.e4cc858b46d0cb08ee34281ae92b15ac.js": "/gender-generator/precache-manifest.e4cc858b46d0cb08ee34281ae92b15ac.js",
+    "service-worker.js": "/gender-generator/service-worker.js",
+    "static/css/main.92582ff2.chunk.css.map": "/gender-generator/static/css/main.92582ff2.chunk.css.map"
   },
   "entrypoints": [
     "static/js/runtime-main.3ad9f63d.js",
-    "static/js/2.ee79a85a.chunk.js",
-    "static/js/main.95a8afdf.chunk.js"
+    "static/js/2.2c3f3d47.chunk.js",
+    "static/css/main.92582ff2.chunk.css",
+    "static/js/main.54db8077.chunk.js"
   ]
 }
