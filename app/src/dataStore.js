@@ -51,7 +51,7 @@ export function addNewCategory(label, size) {
       0.6 *
       // TODO: Figure out how often we want overlaps
       // Math.round(Math.random() * X) basically says we get overlaps less than half the time
-      Math.round(Math.random() * 0.78),
+      Math.round(Math.random() * 0.7),
   });
 
   // Now duplicate the existing pair sets

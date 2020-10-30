@@ -4,7 +4,7 @@ import { selectAll } from "d3";
 ///////////////////////////// Create filter ///////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-export function createGooyFilter(svg) {
+export function createGooeyFilter(svg) {
   //SVG filter for the gooey effect
   //Code taken from http://tympanus.net/codrops/2015/03/10/creative-gooey-effects/
   var defs = svg.append("defs");

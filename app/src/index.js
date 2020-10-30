@@ -1,12 +1,21 @@
 import "./index.css";
 
-import { select } from "d3";
+import {
+  // easeLinear,
+  // forceCenter,
+  // forceCollide,
+  // forceManyBody,
+  // forceSimulation,
+  // range,
+  select,
+  // timer
+} from "d3";
 
 import { VennDiagram } from "venn.js";
 
 import { serializeCategories, addNewCategory } from "./dataStore.js";
 
-import { createGooyFilter, colorCircles } from "./visuals.js";
+import { createGooeyFilter, colorCircles } from "./visuals.js";
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
@@ -19,21 +28,36 @@ import { createGooyFilter, colorCircles } from "./visuals.js";
 ///////////////////////////////////////////////////////////////////////////
 /////////////////////////////// Set-up ////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-
-var width = document.documentElement.clientWidth,
-  height = document.documentElement.clientHeight;
+/**
+ * redraws on resize to fit browser window
+ */
+function resizeChart() {
+  var width = window.innerWidth;
+  var height = window.innerHeight;
+  console.log("resize!!", width, height);
+  svg.attr("width", width).attr("height", height);
+  chart.width(width).height(height);
+}
 
 // Generate the Chart
-const chart = VennDiagram().width(width).height(height).duration(2000);
+const chart = VennDiagram();
 
 // Create the SVG that houses the chart
-const svg = select("body")
-  .append("svg")
-  .attr("width", width)
-  .attr("height", height);
+const svg = select("body").append("svg");
 
-createGooyFilter(svg);
+resizeChart();
+select(window).on("resize", resizeChart);
 
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////// Create filter ///////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
+createGooeyFilter(svg);
+
+///////////////////////////////////////////////////////////////////////////
+///////////////////////////// Create circles //////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+// var circleWrapper = svg
 // The wrapper for all of the circles
 var vennWrapper = svg
   .append("g")
@@ -41,9 +65,14 @@ var vennWrapper = svg
   .attr("id", "vennWrapper")
   .style("filter", "url(#gooeyCodeFilter)");
 
+///////////////////////////////////////////////////////////////////////////
+/////////////////////////////// Functions /////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+
 /**
  * This updates our data and recalls the colorizing function
  */
+
 function updateData() {
   // Fetch our data
   const nodes = serializeCategories();
@@ -51,14 +80,13 @@ function updateData() {
 
   // Update all of the colors
   colorCircles();
-
-  chart.orientation(chart.orientation() + Math.PI / 8);
 }
 
 /**
  * A setInterval loop to update our page every second
  */
-window.setInterval(updateData, 1000);
+
+window.setInterval(updateData, 2000);
 
 /**
  * Add a random circle
@@ -71,5 +99,5 @@ function addOne(size = Math.random() * 14 + 8) {
 
 // Add a new category every 2.5 seconds up to 10
 for (let i = 0; i < 10; i += 1) {
-  window.setTimeout(addOne, 2500 * i);
+  window.setTimeout(addOne, 5000 * i);
 }
