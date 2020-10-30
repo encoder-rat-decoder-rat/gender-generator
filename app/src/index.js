@@ -1,14 +1,22 @@
+import "./index.css";
+
 import {
-  easeLinear,
-  forceCenter,
-  forceCollide,
-  forceManyBody,
-  forceSimulation,
-  interpolateString,
-  range,
-  scaleLinear,
+  // easeLinear,
+  // forceCenter,
+  // forceCollide,
+  // forceManyBody,
+  // forceSimulation,
+  // range,
   select,
+  // timer
 } from "d3";
+
+import { VennDiagram } from "venn.js";
+
+import { serializeCategories, addNewCategory } from "./dataStore.js";
+
+import { createGooeyFilter, colorCircles } from "./visuals.js";
+import { downloadAsPNG } from "./downloadFrame.js";
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
@@ -22,251 +30,94 @@ import {
 /////////////////////////////// Set-up ////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-var width = 960,
-  height = 500;
-var spacing = 30;
-var theta = Math.PI / 3;
+// Generate the Chart
+const chart = VennDiagram();
 
-// nodes need to come from data i think
-var nodes = range(150).map(function () {
-    return { radius: Math.random() * 14 + 8 };
-  }),
-  root = nodes[0];
+// Create the SVG that houses the chart
+const svg = select("body").append("svg");
 
-root.radius = 0;
-root.fixed = true;
+// And add attributes so it can be downloaded
+// eslint-disable-next-line no-unused-expressions
+svg
+  .attr("version", 1.1)
+  .attr("xmlns", "http://www.w3.org/2000/svg")
+  .attr("id", "chartWrapper")
+  .attr("style", "background-color: #acd;")
+  .node().parentNode.innerHTML;
 
-forceSimulation(nodes)
-  // .force('charge', forceManyBody().strength(-20))
-  // .force('charge', forceManyBody().strength(function(d, i) { return i ? 0 : -2000; }))
-  // gravity: how they overlap i think / forceManyBody
+/**
+ * redraws on resize to fit browser window
+ */
+function resizeChart() {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  svg.attr("width", width).attr("height", height);
+  chart.width(width).height(height);
+}
 
-  // forceManyBody: negative flies apart, positive sticks together
-  // how to alter this from time to time?
-  // setting this to 100 is fucking wild and it's good
-  .force("charge", forceManyBody().strength(-60))
-  .force("center", forceCenter(width / 2, height / 2))
-  .force(
-    "collision",
-    forceCollide().radius(function (d) {
-      return d.radius;
-    })
-  )
-  .on("tick", update)
-  .on("end", goRound);
+// Set an interval loop to check if the ?frame query param is added to the url
+let currentParams = null;
+const checkFrame = () => {
+  const newParams = window.location.search;
+  if (currentParams !== newParams && newParams.includes("?frame")) {
+    downloadAsPNG(document.getElementById("chartWrapper"));
+  }
+  currentParams = newParams;
+};
+window.setInterval(checkFrame, 2000);
 
-var svg = select("body")
-  .append("svg")
-  .attr("width", width)
-  .attr("height", height);
-// .attr("transform", "translate(" + (width/2) + "," + (height/2) + ")");
+resizeChart();
+select(window).on("resize", resizeChart);
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////// Create filter ///////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-//SVG filter for the gooey effect
-//Code taken from http://tympanus.net/codrops/2015/03/10/creative-gooey-effects/
-var defs = svg.append("defs");
-var filter = defs.append("filter").attr("id", "gooeyCodeFilter");
-filter
-  .append("feGaussianBlur")
-  .attr("in", "SourceGraphic")
-  .attr("stdDeviation", "10")
-  //to fix safari: http://stackoverflow.com/questions/24295043/svg-gaussian-blur-in-safari-unexpectedly-lightens-image
-  .attr("color-interpolation-filters", "sRGB")
-  .attr("result", "blur");
-filter
-  .append("feColorMatrix")
-  .attr("in", "blur")
-  .attr("mode", "matrix")
-  .attr("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7")
-  .attr("result", "gooey");
-//If you want the end shapes to be exactly the same size as without the filter
-//add the feComposite below. However this will result in a less beautiful gooey effect
-//filter.append("feBlend")
-//  .attr("in","SourceGraphic")
-//  .attr("in2","gooey");
-//Instead of the feBlend, you can do feComposite. This will also place a sharp image on top
-//But it will result in smaller circles
-//filter.append("feComposite") //feBlend
-//  .attr("in","SourceGraphic")
-//  .attr("in2","gooey")
-//  .attr("operator","atop");
+createGooeyFilter(svg);
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////// Create circles //////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-//Create scale
-// scales are for mapping, eg calc positions based on data
-var xScale = scaleLinear()
-  .domain([-1.25, 1.25])
-  .range([-width / 2, width / 2]);
-
-var circleWrapper = svg
+// The wrapper for all of the circles
+const vennWrapper = svg
   .append("g")
-  .attr("class", "circleWrapper")
+  .attr("class", "vennWrapper")
+  .attr("id", "vennWrapper")
   .style("filter", "url(#gooeyCodeFilter)");
-
-//Create the circles that will move out and in the center circle
-var steps = 20;
-// var colors = ["#F95B34", "#EE3E64", "#F36283", "#FF9C34", "#EBDE52", "#B7D84B", "#44ACCF"];
-// temporary pastel scheme
-var colors = [
-  "#fce9f1",
-  "#FEC8D8",
-  "#FFDFD3",
-  "#e9fcf4",
-  "#feece8",
-  "#e8fafe",
-  "#ece8fe",
-  "#efbbcf",
-  "#ffd5cd",
-  "#FFCCDD",
-  "#FFFFCC",
-  "#FFDDCC",
-  "#CCDDEE",
-  "#FFCCCC",
-  "#CCDDCC",
-  "#CCFFCC",
-  "#FFEEFF",
-  "#CCCCFF",
-  "#CAEEFE",
-  "#FFFCE7",
-  "E1FFD4",
-  "#FCE1F8",
-  "DACBFE",
-];
-
-var flyCircleData = [];
-for (var i = 0; i < steps; i++) {
-  flyCircleData.push({
-    fixedAngle: (i / steps) * (2 * Math.PI),
-    randomAngle: (i / steps) * (2 * Math.PI),
-    speed: Math.random() * 7000 + 3000,
-    r: Math.floor(Math.random() * 50 + 15),
-    color: colors[i % colors.length],
-  });
-} //for i
-
-//Set up the circles
-circleWrapper
-  .selectAll(".flyCircle")
-  .data(flyCircleData)
-  .enter()
-  .append("circle")
-  .attr("class", "flyCircle")
-  .style("fill", function (d) {
-    return d.color;
-  })
-  .attr("cy", 0)
-  .attr("cx", 0)
-  .attr("r", 0)
-  .call((enter) =>
-    enter
-      .transition()
-      .duration(1500)
-      .delay(function (d, i) {
-        return i * 500;
-      })
-  )
-  .attr("cy", function (d) {
-    return xScale(Math.sin(d.fixedAngle));
-  })
-  .attr("cx", function (d) {
-    return xScale(Math.cos(d.fixedAngle));
-  })
-  .attr("r", function (d) {
-    return d.r;
-  })
-  .attr("transform", function (d, i) {
-    var radius = spacing * Math.sqrt(i),
-      angle = i * theta;
-    return (
-      "translate(" +
-      radius * Math.cos(angle) +
-      "," +
-      radius * Math.sin(angle) +
-      ")"
-    );
-  })
-  .on("end", goRound);
 
 ///////////////////////////////////////////////////////////////////////////
 /////////////////////////////// Functions /////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-// eslint-disable-next-line no-unused-vars
-function collide(node) {
-  var r = node.radius + 16,
-    nx1 = node.x - r,
-    nx2 = node.x + r,
-    ny1 = node.y - r,
-    ny2 = node.y + r;
-  return function (quad, x1, y1, x2, y2) {
-    if (quad.point && quad.point !== node) {
-      var x = node.x - quad.point.x,
-        y = node.y - quad.point.y,
-        l = Math.sqrt(x * x + y * y),
-        r = node.radius + quad.point.radius;
-      if (l < r) {
-        l = ((l - r) / l) * 0.5;
-        node.x -= x *= l;
-        node.y -= y *= l;
-        quad.point.x += x;
-        quad.point.y += y;
-      }
-    }
-    return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
-  };
-}
-//Continuously moves the circles with different speeds
-// can't get this to work lol
-function goRound() {
-  select("svg")
-    .selectAll("circle")
-    .data(nodes)
-    // u.enter()
-    .transition()
-    .duration(4000)
-    .ease(easeLinear)
-    .attrTween("transform", function () {
-      return interpolateString("rotate(0)", "rotate(360)");
-    })
-    .on("end", goRound);
+/**
+ * This updates our data and recalls the colorizing function
+ */
+
+function updateData() {
+  // Fetch our data
+  const nodes = serializeCategories();
+  vennWrapper.datum(nodes).call(chart);
+
+  // Update all of the colors
+  colorCircles();
 }
 
-// function repeat() {
-//  .transition()
-//  .duration(4000)
-//  .ease(easeCircle)
-//  .attr('cx',function(d) {
-//      return d.x + 2
-//    })
-//  .on("end", repeat);
-// }
+/**
+ * A setInterval loop to update our page every second
+ */
 
-// joins the nodes array to circle elements and updates their positions
-function update() {
-  // preparing for the join
-  var u = select("svg").selectAll("circle").data(nodes);
-  // .data(flyCircleData)
-  //selects all circles in nodes
-  u.enter()
-    //adds circle element to dom
-    .append("circle")
-    // this creates the phylloaxis grid bc all the hidden circles now have a radius of 5
-    // there's 2 datasets here right now
-    // .attr('r', 5)
-    // merges selected data + new selected data
-    .merge(u)
-    .attr("cx", function (d) {
-      return d.x;
-    })
-    .attr("cy", function (d) {
-      return d.y;
-    });
+window.setInterval(updateData, 2000);
 
-  u.exit().remove();
-  // goRound(u)
+/**
+ * Add a random circle
+ *
+ * @param      {Number}  [size=Math.random()*14+8]  The size
+ */
+function addOne(size = Math.random() * 14 + 8) {
+  addNewCategory("", size);
+}
+
+// Add a new category every 2.5 seconds up to 10
+for (let i = 0; i < 10; i += 1) {
+  window.setTimeout(addOne, 5000 * i);
 }
