@@ -2,8 +2,10 @@ import "./index.css";
 
 import {
   Application,
+  Container,
   Graphics,
   filters,
+  Point,
   Ticker,
   settings,
   utils,
@@ -12,18 +14,36 @@ import * as PIXI from "pixi.js";
 
 import { DotFilter } from "@pixi/filter-dot";
 import { MultiColorReplaceFilter } from "@pixi/filter-multi-color-replace";
-
-import {
-  baseCategories,
-  serializeCategories,
-  addNewCategory,
-} from "./dataStore.js";
 import GooeyFilter from "./GooeyFilter.js";
 
 import { downloadAsPNG } from "./downloadFrame.js";
 
 window.PIXI = PIXI;
 settings.FILTER_RESOLUTION = 2;
+
+const BG_COLOR = 0xadefd1;
+const FG_COLOR = 0x00203f;
+
+const FACE_LOCATIONS = [
+  // Hair
+  new Point(0, -350),
+  // Nose
+  new Point(0, 100),
+  // Lips
+  new Point(0, 250),
+  // Left Eye
+  new Point(-75, -100),
+  // Left Eyebrow
+  new Point(-75, -150),
+  // Left Ear
+  new Point(-300, 0),
+  // Right Eye
+  new Point(75, -100),
+  // Right Eyebrow
+  new Point(75, -150),
+  // Right Ear
+  new Point(300, 0),
+];
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
@@ -36,9 +56,6 @@ settings.FILTER_RESOLUTION = 2;
 ///////////////////////////////////////////////////////////////////////////
 /////////////////////////////// Set-up ////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-
-const BG_COLOR = 0xadefd1;
-const FG_COLOR = 0x00203f;
 
 // Setup the pixi application
 const app = new Application({
@@ -74,6 +91,21 @@ const colorReplace = new MultiColorReplaceFilter(
 
 app.stage.filters = [blurFilter, gooeyFilter, dotFilter, colorReplace];
 
+// Set a container for where all of the objects will be (so we can center and scale it on resize)
+const faceContainer = new PIXI.Container();
+app.stage.addChild(faceContainer);
+faceContainer.position.set(app.renderer.width, app.renderer.height);
+faceContainer.pivot.set(app.renderer.width / 2, app.renderer.height / 2);
+
+// Draw the oval behind the face
+const circle = new Graphics()
+  .lineStyle(3, 0xcccccc)
+  .drawEllipse(0, 0, 300, 400);
+circle.position.set(0, 0);
+circle.scale.set(0, 0);
+circle.destination = circle.position;
+faceContainer.addChild(circle);
+
 // Set an interval loop to check if the ?frame query param is added to the url
 let currentParams = null;
 const checkFrame = () => {
@@ -86,52 +118,52 @@ const checkFrame = () => {
 window.setInterval(checkFrame, 2000);
 
 /**
- * This updates our data and recalls the colorizing function
- */
-
-function updateData() {
-  // Fetch our data
-  // const nodes = serializeCategories();
-  baseCategories.forEach((category, index) => {
-    if (!category.pixiObject) {
-      const circle = new Graphics();
-      circle
-        .beginFill(0xffffff * Math.random())
-        .drawCircle(0, 0, category.size)
-        .endFill();
-      circle.position.set(
-        window.innerWidth * Math.random(),
-        window.innerHeight * Math.random()
-      );
-      app.stage.addChild(circle);
-      category.pixiObject = circle;
-      app.stage.getBounds();
-    }
-  });
-
-  // Update all of the colors
-}
-
-/**
- * A setInterval loop to update our page every second
- */
-
-window.setInterval(updateData, 2000);
-
-/**
  * Add a random circle
  *
  * @param      {Number}  [size=Math.random()*14+8]  The size
  */
-function addOne(size = Math.random() * 150 + 50) {
-  addNewCategory("", size);
+function addOne(index) {
+  const size = Math.random() * 75 + 10;
+  const circle = new Graphics()
+    .beginFill(0xffffff * Math.random())
+    .drawCircle(0, 0, size)
+    .endFill();
+  circle.position.set(
+    app.renderer.width * Math.random(),
+    app.renderer.height * Math.random()
+  );
+  circle.scale.set(0, 0);
+  circle.destination = FACE_LOCATIONS[index];
+  faceContainer.addChild(circle);
 }
 
-// Add a new category every 2.5 seconds up to 10
-for (let i = 0; i < 10; i += 1) {
-  window.setTimeout(addOne, 5000 * i);
+// Add a new blob every 2.5 seconds up to 9
+for (let i = 0; i < 9; i += 1) {
+  window.setTimeout(addOne.bind(null, i), 5000 * i);
 }
 
+///////////////////////////////////////////////////////////////////////////
+/////////////////////////// Update Loop ///////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
+app.ticker.add((delta) => {
+  faceContainer.children.forEach((child) => {
+    // Grow-in effect
+    child.scale.set(
+      child.scale.x + (1 - child.scale.x) * 0.1 * (Math.random() * 0.8),
+      child.scale.y + (1 - child.scale.y) * 0.1 * (Math.random() * 0.8)
+    );
+
+    // Movement towards destination
+    child.position.set(
+      child.position.x + (child.destination.x - child.position.x) * 0.1,
+      child.position.y + (child.destination.y - child.position.y) * 0.1
+    );
+  });
+});
+
+///////////////////////////////////////////////////////////////////////////
+// DEBUG MOUSE CIRCLE
+///////////////////////////////////////////////////////////////////////////
 var mouseCircle = new PIXI.Graphics();
 app.stage.addChild(mouseCircle);
 
