@@ -1,5 +1,3 @@
-import { selectAll } from "d3";
-
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////// Create filter ///////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
@@ -61,14 +59,3 @@ export const COLORS = [
   "#FCE1F8",
   "DACBFE",
 ];
-
-export function colorCircles(wrapper) {
-  selectAll(".venn-circle path")
-    .style("fill-opacity", 0.5)
-    .style("fill", function (d, i) {
-      return COLORS[i];
-    });
-
-  // Hide those labels, for now
-  selectAll(".venn-circle .label").style("display", "none");
-}

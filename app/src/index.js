@@ -1,22 +1,29 @@
 import "./index.css";
 
 import {
-  // easeLinear,
-  // forceCenter,
-  // forceCollide,
-  // forceManyBody,
-  // forceSimulation,
-  // range,
-  select,
-  // timer
-} from "d3";
+  Application,
+  Graphics,
+  filters,
+  Ticker,
+  settings,
+  utils,
+} from "pixi.js";
+import * as PIXI from "pixi.js";
 
-import { VennDiagram } from "venn.js";
+import { DotFilter } from "@pixi/filter-dot";
+import { MultiColorReplaceFilter } from "@pixi/filter-multi-color-replace";
 
-import { serializeCategories, addNewCategory } from "./dataStore.js";
+import {
+  baseCategories,
+  serializeCategories,
+  addNewCategory,
+} from "./dataStore.js";
+import GooeyFilter from "./GooeyFilter.js";
 
-import { createGooeyFilter, colorCircles } from "./visuals.js";
 import { downloadAsPNG } from "./downloadFrame.js";
+
+window.PIXI = PIXI;
+settings.FILTER_RESOLUTION = 2;
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
@@ -30,30 +37,42 @@ import { downloadAsPNG } from "./downloadFrame.js";
 /////////////////////////////// Set-up ////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-// Generate the Chart
-const chart = VennDiagram();
+const BG_COLOR = 0xadefd1;
+const FG_COLOR = 0x00203f;
 
-// Create the SVG that houses the chart
-const svg = select("body").append("svg");
+// Setup the pixi application
+const app = new Application({
+  width: window.innerWidth,
+  height: window.innerHeight,
+  antialias: true,
+  resizeTo: window,
+  backgroundColor: BG_COLOR,
+  sharedTicker: true,
+  sharedLoader: true,
+});
+window.app = app;
+app.start();
+Ticker.shared.start();
+// Add it to the body
+document.body.appendChild(app.view);
 
-// And add attributes so it can be downloaded
-// eslint-disable-next-line no-unused-expressions
-svg
-  .attr("version", 1.1)
-  .attr("xmlns", "http://www.w3.org/2000/svg")
-  .attr("id", "chartWrapper")
-  .attr("style", "background-color: #acd;")
-  .node().parentNode.innerHTML;
+// Add visual filters
+const blurFilter = new filters.BlurFilter();
+blurFilter.blur = 20;
+blurFilter.quality = 10;
 
-/**
- * redraws on resize to fit browser window
- */
-function resizeChart() {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  svg.attr("width", width).attr("height", height);
-  chart.width(width).height(height);
-}
+const gooeyFilter = new GooeyFilter();
+
+const dotFilter = new DotFilter(1.05, 0);
+const colorReplace = new MultiColorReplaceFilter(
+  [
+    [0xffffff, BG_COLOR],
+    [0x000000, FG_COLOR],
+  ],
+  0.1
+);
+
+app.stage.filters = [blurFilter, gooeyFilter, dotFilter, colorReplace];
 
 // Set an interval loop to check if the ?frame query param is added to the url
 let currentParams = null;
@@ -66,40 +85,31 @@ const checkFrame = () => {
 };
 window.setInterval(checkFrame, 2000);
 
-resizeChart();
-select(window).on("resize", resizeChart);
-
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////// Create filter ///////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-
-createGooeyFilter(svg);
-
-///////////////////////////////////////////////////////////////////////////
-///////////////////////////// Create circles //////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-// The wrapper for all of the circles
-const vennWrapper = svg
-  .append("g")
-  .attr("class", "vennWrapper")
-  .attr("id", "vennWrapper")
-  .style("filter", "url(#gooeyCodeFilter)");
-
-///////////////////////////////////////////////////////////////////////////
-/////////////////////////////// Functions /////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-
 /**
  * This updates our data and recalls the colorizing function
  */
 
 function updateData() {
   // Fetch our data
-  const nodes = serializeCategories();
-  vennWrapper.datum(nodes).call(chart);
+  // const nodes = serializeCategories();
+  baseCategories.forEach((category, index) => {
+    if (!category.pixiObject) {
+      const circle = new Graphics();
+      circle
+        .beginFill(0xffffff * Math.random())
+        .drawCircle(0, 0, category.size)
+        .endFill();
+      circle.position.set(
+        window.innerWidth * Math.random(),
+        window.innerHeight * Math.random()
+      );
+      app.stage.addChild(circle);
+      category.pixiObject = circle;
+      app.stage.getBounds();
+    }
+  });
 
   // Update all of the colors
-  colorCircles();
 }
 
 /**
@@ -113,7 +123,7 @@ window.setInterval(updateData, 2000);
  *
  * @param      {Number}  [size=Math.random()*14+8]  The size
  */
-function addOne(size = Math.random() * 14 + 8) {
+function addOne(size = Math.random() * 150 + 50) {
   addNewCategory("", size);
 }
 
@@ -121,3 +131,16 @@ function addOne(size = Math.random() * 14 + 8) {
 for (let i = 0; i < 10; i += 1) {
   window.setTimeout(addOne, 5000 * i);
 }
+
+var mouseCircle = new PIXI.Graphics();
+app.stage.addChild(mouseCircle);
+
+// Listen for animate update
+app.ticker.add(function (delta) {
+  var mouseposition = app.renderer.plugins.interaction.mouse.global;
+  mouseCircle.clear();
+  mouseCircle.lineStyle(0);
+  mouseCircle.beginFill(0xaaaaaa, 1);
+  mouseCircle.drawCircle(mouseposition.x, mouseposition.y, 50);
+  mouseCircle.endFill();
+});
