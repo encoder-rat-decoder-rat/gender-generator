@@ -74,6 +74,11 @@ Ticker.shared.start();
 // Add it to the body
 document.body.appendChild(app.view);
 
+// Set a container for where all of the objects will be (so we can center and scale it on resize)
+const faceContainer = new Container();
+app.stage.addChild(faceContainer);
+faceContainer.position.set(app.renderer.width / 2, app.renderer.height / 2);
+
 // Add visual filters
 const blurFilter = new filters.BlurFilter();
 blurFilter.blur = 20;
@@ -90,19 +95,7 @@ const colorReplace = new MultiColorReplaceFilter(
   0.1
 );
 
-app.stage.filters = [blurFilter, gooeyFilter, dotFilter, colorReplace];
-
-// Set a container for where all of the objects will be (so we can center and scale it on resize)
-const faceContainer = new Container();
-app.stage.addChild(faceContainer);
-faceContainer.position.set(app.renderer.width, app.renderer.height);
-// Zoom in slightly
-faceContainer.scale.set(1.3, 1.3);
-// Center it
-faceContainer.pivot.set(
-  app.renderer.width / 2 / faceContainer.scale.x,
-  app.renderer.height / 2 / faceContainer.scale.y
-);
+faceContainer.filters = [blurFilter, gooeyFilter, dotFilter, colorReplace];
 
 // Set an interval loop to check if the ?frame query param is added to the url
 let currentParams = null;
@@ -120,7 +113,7 @@ window.setInterval(checkFrame, 2000);
  *
  * @param      {Number}  [size=seededRandom()*14+8]  The size
  */
-function addOne(point, size = 4.5, color = 0xffffff) {
+function createPoint(point, size = 1, color = 0xffffff) {
   // The UV coords are normalized in terms of 0 -> 1 of the container
   const [xRel, yRel] = point;
   const circle = new Graphics()
@@ -129,36 +122,42 @@ function addOne(point, size = 4.5, color = 0xffffff) {
     .endFill();
   // TODO: reposition on window resize
   circle.position.set(
-    xRel * app.view.width - app.view.width / 2,
-    yRel * app.view.height - app.view.height / 2
+    xRel * app.renderer.width - app.renderer.width / 2,
+    yRel * app.renderer.height - app.renderer.height / 2
   );
-  circle.scale.set(0, 0);
-  faceContainer.addChild(circle);
+  return circle;
 }
-
-// Add every point
-UV_COORDS.forEach((point) => {
-  addOne(point);
-});
 
 // Add all of the important points
 for (const key in MESH_ANNOTATIONS) {
   if (!key.includes("Iris") && !key.includes("silhouette")) {
+    const feature = new Container();
+    feature.name = key;
+
     MESH_ANNOTATIONS[key].forEach((pointIndex) => {
-      addOne(UV_COORDS[pointIndex], seededRandom() * 20);
+      feature.addChild(createPoint(UV_COORDS[pointIndex], seededRandom() * 30));
     });
+
+    const { width, height } = feature.getLocalBounds();
+
+    feature.position.set(25 - seededRandom() * 50, 25 - seededRandom() * 50);
+
+    feature.scale.set(
+      1 + (0.2 - seededRandom() * 0.4),
+      1 + (0.2 - seededRandom() * 0.4)
+    );
+
+    feature.rotation = Math.PI / 8 - (seededRandom() * Math.PI) / 4;
+
+    faceContainer.addChild(feature);
   }
 }
 
-///////////////////////////////////////////////////////////////////////////
-/////////////////////////// Update Loop ///////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-app.ticker.add((delta) => {
-  faceContainer.children.forEach((child) => {
-    // Grow-in effect
-    child.scale.set(
-      child.scale.x + (1 - child.scale.x) * 0.1,
-      child.scale.y + (1 - child.scale.y) * 0.1
-    );
-  });
-});
+// Scale up the face so at least one edge is touching the sides
+const containerBounds = faceContainer.getBounds();
+faceContainer.scale.set(
+  Math.min(
+    1 + (app.renderer.width - containerBounds.width) / containerBounds.width,
+    1 + (app.renderer.height - containerBounds.height) / containerBounds.height
+  )
+);
