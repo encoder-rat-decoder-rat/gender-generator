@@ -8,12 +8,12 @@ import {
   Point,
   Ticker,
   settings,
-  utils,
 } from "pixi.js";
 import * as PIXI from "pixi.js";
-
 import { DotFilter } from "@pixi/filter-dot";
 import { MultiColorReplaceFilter } from "@pixi/filter-multi-color-replace";
+import seedrandom from "seedrandom";
+
 import GooeyFilter from "./GooeyFilter.js";
 
 import { downloadAsPNG } from "./downloadFrame.js";
@@ -57,6 +57,11 @@ const FACE_LOCATIONS = [
 /////////////////////////////// Set-up ////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
+// Set our random seed based on the "seed" query parameter supplied
+const queryParams = new URLSearchParams(window.location.search);
+const seed = queryParams.get("seed");
+const seededRandom = seedrandom(seed);
+
 // Setup the pixi application
 const app = new Application({
   width: window.innerWidth,
@@ -92,7 +97,7 @@ const colorReplace = new MultiColorReplaceFilter(
 app.stage.filters = [blurFilter, gooeyFilter, dotFilter, colorReplace];
 
 // Set a container for where all of the objects will be (so we can center and scale it on resize)
-const faceContainer = new PIXI.Container();
+const faceContainer = new Container();
 app.stage.addChild(faceContainer);
 faceContainer.position.set(app.renderer.width, app.renderer.height);
 faceContainer.pivot.set(app.renderer.width / 2, app.renderer.height / 2);
@@ -120,18 +125,15 @@ window.setInterval(checkFrame, 2000);
 /**
  * Add a random circle
  *
- * @param      {Number}  [size=Math.random()*14+8]  The size
+ * @param      {Number}  [size=seededRandom()*14+8]  The size
  */
 function addOne(index) {
-  const size = Math.random() * 75 + 10;
+  const size = seededRandom() * 75 + 10;
   const circle = new Graphics()
-    .beginFill(0xffffff * Math.random())
+    .beginFill(0xffffff * seededRandom())
     .drawCircle(0, 0, size)
     .endFill();
-  circle.position.set(
-    app.renderer.width * Math.random(),
-    app.renderer.height * Math.random()
-  );
+  circle.position.set(0, 0);
   circle.scale.set(0, 0);
   circle.destination = FACE_LOCATIONS[index];
   faceContainer.addChild(circle);
@@ -149,8 +151,8 @@ app.ticker.add((delta) => {
   faceContainer.children.forEach((child) => {
     // Grow-in effect
     child.scale.set(
-      child.scale.x + (1 - child.scale.x) * 0.1 * (Math.random() * 0.8),
-      child.scale.y + (1 - child.scale.y) * 0.1 * (Math.random() * 0.8)
+      child.scale.x + (1 - child.scale.x) * 0.1,
+      child.scale.y + (1 - child.scale.y) * 0.1
     );
 
     // Movement towards destination
@@ -159,20 +161,4 @@ app.ticker.add((delta) => {
       child.position.y + (child.destination.y - child.position.y) * 0.1
     );
   });
-});
-
-///////////////////////////////////////////////////////////////////////////
-// DEBUG MOUSE CIRCLE
-///////////////////////////////////////////////////////////////////////////
-var mouseCircle = new PIXI.Graphics();
-app.stage.addChild(mouseCircle);
-
-// Listen for animate update
-app.ticker.add(function (delta) {
-  var mouseposition = app.renderer.plugins.interaction.mouse.global;
-  mouseCircle.clear();
-  mouseCircle.lineStyle(0);
-  mouseCircle.beginFill(0xaaaaaa, 1);
-  mouseCircle.drawCircle(mouseposition.x, mouseposition.y, 50);
-  mouseCircle.endFill();
 });
