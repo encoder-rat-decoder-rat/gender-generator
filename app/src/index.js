@@ -5,7 +5,6 @@ import {
   Container,
   Graphics,
   filters,
-  Point,
   Ticker,
   settings,
   utils,
@@ -137,8 +136,6 @@ for (const key in MESH_ANNOTATIONS) {
     MESH_ANNOTATIONS[key].forEach((pointIndex) => {
       feature.addChild(createPoint(UV_COORDS[pointIndex], seededRandom() * 30));
     });
-
-    const { width, height } = feature.getLocalBounds();
 
     feature.position.set(25 - seededRandom() * 50, 25 - seededRandom() * 50);
 
