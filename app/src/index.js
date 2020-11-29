@@ -8,42 +8,24 @@ import {
   Point,
   Ticker,
   settings,
+  utils,
 } from "pixi.js";
 import * as PIXI from "pixi.js";
 import { DotFilter } from "@pixi/filter-dot";
 import { MultiColorReplaceFilter } from "@pixi/filter-multi-color-replace";
+
+import { UV_COORDS } from "@tensorflow-models/face-landmarks-detection/dist/mediapipe-facemesh/uv_coords.js";
+import { MESH_ANNOTATIONS } from "@tensorflow-models/face-landmarks-detection/dist/mediapipe-facemesh/keypoints.js";
+
 import seedrandom from "seedrandom";
 
 import GooeyFilter from "./GooeyFilter.js";
+import { contrast } from "./utils.js";
 
 import { downloadAsPNG } from "./downloadFrame.js";
 
 window.PIXI = PIXI;
 settings.FILTER_RESOLUTION = 2;
-
-const BG_COLOR = 0xadefd1;
-const FG_COLOR = 0x00203f;
-
-const FACE_LOCATIONS = [
-  // Hair
-  new Point(0, -350),
-  // Nose
-  new Point(0, 100),
-  // Lips
-  new Point(0, 250),
-  // Left Eye
-  new Point(-75, -100),
-  // Left Eyebrow
-  new Point(-75, -150),
-  // Left Ear
-  new Point(-300, 0),
-  // Right Eye
-  new Point(75, -100),
-  // Right Eyebrow
-  new Point(75, -150),
-  // Right Ear
-  new Point(300, 0),
-];
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
@@ -62,13 +44,27 @@ const queryParams = new URLSearchParams(window.location.search);
 const seed = queryParams.get("seed");
 const seededRandom = seedrandom(seed);
 
+const bgColorArray = [seededRandom(), seededRandom(), seededRandom()];
+// Ensure the FG color has at least a contrast ratio of 4.5: 1 for legibility
+// https://www.w3.org/TR/WCAG20-TECHS/G18.html
+let isContrastRatioAcceptable = false;
+let fgColorArray;
+while (!isContrastRatioAcceptable) {
+  fgColorArray = [seededRandom(), seededRandom(), seededRandom()];
+
+  isContrastRatioAcceptable = contrast(bgColorArray, fgColorArray) >= 4.5;
+}
+
+const bgColor = utils.rgb2hex(bgColorArray);
+const fgColor = utils.rgb2hex(fgColorArray);
+
 // Setup the pixi application
 const app = new Application({
   width: window.innerWidth,
   height: window.innerHeight,
   antialias: true,
   resizeTo: window,
-  backgroundColor: BG_COLOR,
+  backgroundColor: bgColor,
   sharedTicker: true,
   sharedLoader: true,
 });
@@ -77,6 +73,11 @@ app.start();
 Ticker.shared.start();
 // Add it to the body
 document.body.appendChild(app.view);
+
+// Set a container for where all of the objects will be (so we can center and scale it on resize)
+const faceContainer = new Container();
+app.stage.addChild(faceContainer);
+faceContainer.position.set(app.renderer.width / 2, app.renderer.height / 2);
 
 // Add visual filters
 const blurFilter = new filters.BlurFilter();
@@ -88,28 +89,13 @@ const gooeyFilter = new GooeyFilter();
 const dotFilter = new DotFilter(1.05, 0);
 const colorReplace = new MultiColorReplaceFilter(
   [
-    [0xffffff, BG_COLOR],
-    [0x000000, FG_COLOR],
+    [0xffffff, bgColor],
+    [0x000000, fgColor],
   ],
   0.1
 );
 
-app.stage.filters = [blurFilter, gooeyFilter, dotFilter, colorReplace];
-
-// Set a container for where all of the objects will be (so we can center and scale it on resize)
-const faceContainer = new Container();
-app.stage.addChild(faceContainer);
-faceContainer.position.set(app.renderer.width, app.renderer.height);
-faceContainer.pivot.set(app.renderer.width / 2, app.renderer.height / 2);
-
-// Draw the oval behind the face
-const circle = new Graphics()
-  .lineStyle(3, 0xcccccc)
-  .drawEllipse(0, 0, 300, 400);
-circle.position.set(0, 0);
-circle.scale.set(0, 0);
-circle.destination = circle.position;
-faceContainer.addChild(circle);
+faceContainer.filters = [blurFilter, gooeyFilter, dotFilter, colorReplace];
 
 // Set an interval loop to check if the ?frame query param is added to the url
 let currentParams = null;
@@ -123,42 +109,55 @@ const checkFrame = () => {
 window.setInterval(checkFrame, 2000);
 
 /**
- * Add a random circle
+ * Add a point on the face mesh
  *
  * @param      {Number}  [size=seededRandom()*14+8]  The size
  */
-function addOne(index) {
-  const size = seededRandom() * 75 + 10;
+function createPoint(point, size = 1, color = 0xffffff) {
+  // The UV coords are normalized in terms of 0 -> 1 of the container
+  const [xRel, yRel] = point;
   const circle = new Graphics()
     .beginFill(0xffffff * seededRandom())
     .drawCircle(0, 0, size)
     .endFill();
-  circle.position.set(0, 0);
-  circle.scale.set(0, 0);
-  circle.destination = FACE_LOCATIONS[index];
-  faceContainer.addChild(circle);
+  // TODO: reposition on window resize
+  circle.position.set(
+    xRel * app.renderer.width - app.renderer.width / 2,
+    yRel * app.renderer.height - app.renderer.height / 2
+  );
+  return circle;
 }
 
-// Add a new blob every 2.5 seconds up to 9
-for (let i = 0; i < 9; i += 1) {
-  window.setTimeout(addOne.bind(null, i), 5000 * i);
+// Add all of the important points
+for (const key in MESH_ANNOTATIONS) {
+  if (!key.includes("Iris") && !key.includes("silhouette")) {
+    const feature = new Container();
+    feature.name = key;
+
+    MESH_ANNOTATIONS[key].forEach((pointIndex) => {
+      feature.addChild(createPoint(UV_COORDS[pointIndex], seededRandom() * 30));
+    });
+
+    const { width, height } = feature.getLocalBounds();
+
+    feature.position.set(25 - seededRandom() * 50, 25 - seededRandom() * 50);
+
+    feature.scale.set(
+      1 + (0.2 - seededRandom() * 0.4),
+      1 + (0.2 - seededRandom() * 0.4)
+    );
+
+    feature.rotation = Math.PI / 8 - (seededRandom() * Math.PI) / 4;
+
+    faceContainer.addChild(feature);
+  }
 }
 
-///////////////////////////////////////////////////////////////////////////
-/////////////////////////// Update Loop ///////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-app.ticker.add((delta) => {
-  faceContainer.children.forEach((child) => {
-    // Grow-in effect
-    child.scale.set(
-      child.scale.x + (1 - child.scale.x) * 0.1,
-      child.scale.y + (1 - child.scale.y) * 0.1
-    );
-
-    // Movement towards destination
-    child.position.set(
-      child.position.x + (child.destination.x - child.position.x) * 0.1,
-      child.position.y + (child.destination.y - child.position.y) * 0.1
-    );
-  });
-});
+// Scale up the face so at least one edge is touching the sides
+const containerBounds = faceContainer.getBounds();
+faceContainer.scale.set(
+  Math.min(
+    1 + (app.renderer.width - containerBounds.width) / containerBounds.width,
+    1 + (app.renderer.height - containerBounds.height) / containerBounds.height
+  )
+);
