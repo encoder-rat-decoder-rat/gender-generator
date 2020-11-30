@@ -4,8 +4,11 @@ import {
   Application,
   Container,
   Graphics,
+  Loader,
   filters,
   Ticker,
+  Spritesheet,
+  Sprite,
   settings,
   utils,
 } from "pixi.js";
@@ -22,9 +25,13 @@ import GooeyFilter from "./GooeyFilter.js";
 import { contrast } from "./utils.js";
 
 import { downloadAsPNG } from "./downloadFrame.js";
+import spritesheetJSON from "./spritesheet.json";
 
 window.PIXI = PIXI;
 settings.FILTER_RESOLUTION = 2;
+
+const whiteTextureUrl = `${process.env.PUBLIC_URL}/sprite-sheet-white.png`;
+// const blackTextureUrl = `${process.env.PUBLIC_URL}/sprite-sheet-black.png`
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
@@ -73,88 +80,142 @@ Ticker.shared.start();
 // Add it to the body
 document.body.appendChild(app.view);
 
-// Set a container for where all of the objects will be (so we can center and scale it on resize)
-const faceContainer = new Container();
-app.stage.addChild(faceContainer);
-faceContainer.position.set(app.renderer.width / 2, app.renderer.height / 2);
+async function setup() {
+  const whiteTexture = Loader.shared.resources[whiteTextureUrl].texture;
+  // const blackTexture = Loader.shared.resources[blackTextureUrl].texture
 
-// Add visual filters
-const blurFilter = new filters.BlurFilter();
-blurFilter.blur = 20;
-blurFilter.quality = 10;
+  const whiteSpriteSheet = new Spritesheet(whiteTexture, spritesheetJSON);
+  // const blackSpriteSheet = new Spritesheet(blackTexture, spritesheetJSON)
 
-const gooeyFilter = new GooeyFilter();
+  await Promise.all([
+    new Promise((resolve) => {
+      whiteSpriteSheet.parse(resolve);
+    }),
+    // new Promise((resolve) => {blackSpriteSheet.parse(resolve)}),
+  ]);
 
-const dotFilter = new DotFilter(1.05, 0);
-const colorReplace = new MultiColorReplaceFilter(
-  [
-    [0xffffff, bgColor],
-    [0x000000, fgColor],
-  ],
-  0.1
-);
+  // Set a container for where all of the objects will be (so we can center and scale it on resize)
+  const faceContainer = new Container();
+  const iconContainer = new Container();
+  app.stage.addChild(faceContainer, iconContainer);
+  faceContainer.position.set(app.renderer.width / 2, app.renderer.height / 2);
+  iconContainer.position = faceContainer.position;
 
-faceContainer.filters = [blurFilter, gooeyFilter, dotFilter, colorReplace];
+  // Add visual filters
+  const blurFilter = new filters.BlurFilter();
+  blurFilter.blur = 20;
+  blurFilter.quality = 10;
 
-// Set an interval loop to check if the ?frame query param is added to the url
-let currentParams = null;
-const checkFrame = () => {
-  const newParams = window.location.search;
-  if (currentParams !== newParams && newParams.includes("?frame")) {
-    downloadAsPNG(document.getElementById("chartWrapper"));
-  }
-  currentParams = newParams;
-};
-window.setInterval(checkFrame, 2000);
+  const gooeyFilter = new GooeyFilter();
 
-/**
- * Add a point on the face mesh
- *
- * @param      {Number}  [size=seededRandom()*14+8]  The size
- */
-function createPoint(point, size = 1, color = 0xffffff) {
-  // The UV coords are normalized in terms of 0 -> 1 of the container
-  const [xRel, yRel] = point;
-  const circle = new Graphics()
-    .beginFill(0xffffff * seededRandom())
-    .drawCircle(0, 0, size)
-    .endFill();
-  // TODO: reposition on window resize
-  circle.position.set(
-    xRel * app.renderer.width - app.renderer.width / 2,
-    yRel * app.renderer.height - app.renderer.height / 2
+  const dotFilter = new DotFilter(1.05, 0);
+  window.dotFilter = dotFilter;
+  const colorReplace = new MultiColorReplaceFilter(
+    [
+      [0xffffff, bgColor],
+      [0x000000, fgColor],
+    ],
+    0.1
   );
-  return circle;
-}
 
-// Add all of the important points
-for (const key in MESH_ANNOTATIONS) {
-  if (!key.includes("Iris") && !key.includes("silhouette")) {
-    const feature = new Container();
-    feature.name = key;
+  faceContainer.filters = [blurFilter, gooeyFilter, dotFilter, colorReplace];
+  iconContainer.filters = [colorReplace];
 
-    MESH_ANNOTATIONS[key].forEach((pointIndex) => {
-      feature.addChild(createPoint(UV_COORDS[pointIndex], seededRandom() * 30));
-    });
+  // Set an interval loop to check if the ?frame query param is added to the url
+  let currentParams = null;
+  const checkFrame = () => {
+    const newParams = window.location.search;
+    if (currentParams !== newParams && newParams.includes("?frame")) {
+      downloadAsPNG(document.getElementById("chartWrapper"));
+    }
+    currentParams = newParams;
+  };
+  window.setInterval(checkFrame, 2000);
 
-    feature.position.set(25 - seededRandom() * 50, 25 - seededRandom() * 50);
-
-    feature.scale.set(
-      1 + (0.2 - seededRandom() * 0.4),
-      1 + (0.2 - seededRandom() * 0.4)
+  /**
+   * Add a point on the face mesh
+   *
+   * @param      {Number}  [size=seededRandom()*14+8]  The size
+   */
+  function createPoint(point, size = 1, color = 0xffffff) {
+    // The UV coords are normalized in terms of 0 -> 1 of the container
+    const [xRel, yRel] = point;
+    const circle = new Graphics()
+      .beginFill(0xffffff * seededRandom())
+      .drawCircle(0, 0, size)
+      .endFill();
+    // TODO: reposition on window resize
+    circle.position.set(
+      xRel * app.renderer.width - app.renderer.width / 2,
+      yRel * app.renderer.height - app.renderer.height / 2
     );
 
-    feature.rotation = Math.PI / 8 - (seededRandom() * Math.PI) / 4;
+    const textureKey =
+      whiteSpriteSheet._frameKeys[
+        Math.round((whiteSpriteSheet._frameKeys.length - 1) * seededRandom())
+      ];
+    const iconTexture = whiteSpriteSheet.textures[textureKey];
+    const icon = new Sprite(iconTexture);
+    icon.anchor.set(0.5, 0.5);
+    icon.position.set(circle.x, circle.y);
+    icon.scale.set(
+      (size * 2 - 15) / Math.min(iconTexture.width, iconTexture.height)
+    );
 
-    faceContainer.addChild(feature);
+    // Hide icon if the size is smaller than 10 for visual fidelity
+    if (size < 10) {
+      icon.visible = false;
+    }
+
+    return [circle, icon];
   }
-}
 
-// Scale up the face so at least one edge is touching the sides
-const containerBounds = faceContainer.getBounds();
-faceContainer.scale.set(
-  Math.min(
+  // Add all of the important points
+  for (const key in MESH_ANNOTATIONS) {
+    if (!key.includes("Iris") && !key.includes("silhouette")) {
+      const feature = new Container();
+      feature.name = key;
+      const featureIcons = new Container();
+      featureIcons.name = `${key}_icons`;
+
+      MESH_ANNOTATIONS[key].forEach((pointIndex) => {
+        const [circle, icon] = createPoint(
+          UV_COORDS[pointIndex],
+          seededRandom() * 30
+        );
+        feature.addChild(circle);
+        featureIcons.addChild(icon);
+      });
+
+      feature.position.set(25 - seededRandom() * 50, 25 - seededRandom() * 50);
+      featureIcons.position = feature.position;
+
+      feature.scale.set(
+        1 + (0.2 - seededRandom() * 0.4),
+        1 + (0.2 - seededRandom() * 0.4)
+      );
+      featureIcons.scale = feature.scale;
+
+      feature.rotation = Math.PI / 8 - (seededRandom() * Math.PI) / 4;
+      featureIcons.rotation = feature.rotation;
+
+      faceContainer.addChild(feature);
+      iconContainer.addChild(featureIcons);
+    }
+  }
+
+  // Scale up the face so at least one edge is touching the sides
+  const containerBounds = faceContainer.getBounds();
+  const scale = Math.min(
     1 + (app.renderer.width - containerBounds.width) / containerBounds.width,
     1 + (app.renderer.height - containerBounds.height) / containerBounds.height
-  )
-);
+  );
+  faceContainer.scale.set(scale);
+  iconContainer.scale.set(scale);
+}
+
+// load our assets
+Loader.shared
+  .add(whiteTextureUrl)
+  // .add(blackTextureUrl)
+  .load(setup);
