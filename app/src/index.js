@@ -24,7 +24,7 @@ import seedrandom from "seedrandom";
 import GooeyFilter from "./GooeyFilter.js";
 import { contrast } from "./utils.js";
 
-import { downloadAsPNG } from "./downloadFrame.js";
+import { downloadCanvasAsPNG } from "./downloadFrame.js";
 import spritesheetJSON from "./spritesheet.json";
 
 window.PIXI = PIXI;
@@ -121,17 +121,6 @@ async function setup() {
   faceContainer.filters = [blurFilter, gooeyFilter, dotFilter, colorReplace];
   iconContainer.filters = [colorReplace];
 
-  // Set an interval loop to check if the ?frame query param is added to the url
-  let currentParams = null;
-  const checkFrame = () => {
-    const newParams = window.location.search;
-    if (currentParams !== newParams && newParams.includes("?frame")) {
-      downloadAsPNG(document.getElementById("chartWrapper"));
-    }
-    currentParams = newParams;
-  };
-  window.setInterval(checkFrame, 2000);
-
   /**
    * Add a point on the face mesh
    *
@@ -212,6 +201,13 @@ async function setup() {
   );
   faceContainer.scale.set(scale);
   iconContainer.scale.set(scale);
+
+  app.render();
+
+  // Now that we're loaded we can download if requested
+  if (queryParams.get("download")) {
+    downloadCanvasAsPNG(app.view);
+  }
 }
 
 // load our assets
