@@ -50,6 +50,10 @@ const queryParams = new URLSearchParams(window.location.search);
 const seed = queryParams.get("seed");
 const seededRandom = seedrandom(seed);
 
+// Use the w and h parameters to set a specfic height and width for the canvas (useful for generating and downloading images)
+const width = Number(queryParams.get("w")) || window.innerWidth;
+const height = Number(queryParams.get("h")) || window.innerHeight;
+
 const bgColorArray = [seededRandom(), seededRandom(), seededRandom()];
 // Ensure the FG color has at least a contrast ratio of 4.5: 1 for legibility
 // https://www.w3.org/TR/WCAG20-TECHS/G18.html
@@ -66,13 +70,14 @@ const fgColor = utils.rgb2hex(fgColorArray);
 
 // Setup the pixi application
 const app = new Application({
-  width: window.innerWidth,
-  height: window.innerHeight,
+  width,
+  height,
   antialias: true,
-  resizeTo: window,
   backgroundColor: bgColor,
   sharedTicker: true,
   sharedLoader: true,
+  // Only resize if a width and height have not been provided
+  resizeTo: !queryParams.get("w") && !queryParams.get("h") ? window : undefined,
 });
 window.app = app;
 app.start();
@@ -109,7 +114,6 @@ async function setup() {
   const gooeyFilter = new GooeyFilter();
 
   const dotFilter = new DotFilter(1.05, 0);
-  window.dotFilter = dotFilter;
   const colorReplace = new MultiColorReplaceFilter(
     [
       [0xffffff, bgColor],
