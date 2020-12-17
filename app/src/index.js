@@ -108,8 +108,8 @@ async function setup() {
 
   // Add visual filters
   const blurFilter = new filters.BlurFilter();
-  blurFilter.blur = 20;
-  blurFilter.quality = 10;
+  blurFilter.blur = 30;
+  blurFilter.quality = 7;
 
   const gooeyFilter = new GooeyFilter();
 
@@ -152,7 +152,7 @@ async function setup() {
     icon.anchor.set(0.5, 0.5);
     icon.position.set(circle.x, circle.y);
     icon.scale.set(
-      (size * 2 - 15) / Math.min(iconTexture.width, iconTexture.height)
+      (size * 2 - 20) / Math.min(iconTexture.width, iconTexture.height)
     );
 
     // Hide icon if the size is smaller than 10 for visual fidelity
@@ -184,8 +184,8 @@ async function setup() {
       featureIcons.position = feature.position;
 
       feature.scale.set(
-        1 + (0.2 - seededRandom() * 0.4),
-        1 + (0.2 - seededRandom() * 0.4)
+        1 + (0.2 - seededRandom() * 0.6),
+        1 + (0.2 - seededRandom() * 0.6)
       );
       featureIcons.scale = feature.scale;
 
