@@ -62,7 +62,7 @@ let fgColorArray;
 while (!isContrastRatioAcceptable) {
   fgColorArray = [seededRandom(), seededRandom(), seededRandom()];
 
-  isContrastRatioAcceptable = contrast(bgColorArray, fgColorArray) >= 4.5;
+  isContrastRatioAcceptable = contrast(bgColorArray, fgColorArray) >= 5;
 }
 
 const bgColor = utils.rgb2hex(bgColorArray);
