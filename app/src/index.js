@@ -47,12 +47,16 @@ const whiteTextureUrl = `${process.env.PUBLIC_URL}/sprite-sheet-white.png`;
 
 // Set our random seed based on the "seed" query parameter supplied
 const queryParams = new URLSearchParams(window.location.search);
-const seed = queryParams.get("seed");
-const seededRandom = seedrandom(seed);
+const seed = parseInt(queryParams.get("seed"));
+const page = parseInt(queryParams.get("page"));
+const seededRandom = seedrandom(seed + page);
 
 // Use the w and h parameters to set a specfic height and width for the canvas (useful for generating and downloading images)
-const width = Number(queryParams.get("w")) || window.innerWidth;
-const height = Number(queryParams.get("h")) || window.innerHeight;
+// const width = page ? 2412 : Number(queryParams.get("w")) || window.innerWidth;
+// const height = page ? 3074 : Number(queryParams.get("h")) || window.innerHeight;
+
+const width = 2412;
+const height = 3074;
 
 const bgColorArray = [seededRandom(), seededRandom(), seededRandom()];
 // Ensure the FG color has at least a contrast ratio of 4.5: 1 for legibility
@@ -62,7 +66,7 @@ let fgColorArray;
 while (!isContrastRatioAcceptable) {
   fgColorArray = [seededRandom(), seededRandom(), seededRandom()];
 
-  isContrastRatioAcceptable = contrast(bgColorArray, fgColorArray) >= 5;
+  isContrastRatioAcceptable = contrast(bgColorArray, fgColorArray) >= 4.8;
 }
 
 const bgColor = utils.rgb2hex(bgColorArray);
@@ -209,8 +213,18 @@ async function setup() {
   app.render();
 
   // Now that we're loaded we can download if requested
-  if (queryParams.get("download")) {
-    downloadCanvasAsPNG(app.view);
+  if (page && seed) {
+    // don't pass app.view, pass in the size
+    //some objcet of size height, width
+    const downloadContainer = new Container();
+    // app.stage.addChild(downloadContainer);
+    // downloadContainer.position.set(
+    //   app.renderer.width / 2,
+    //   app.renderer.height / 2
+    // );
+    // downloadContainer.width = width;
+    // downloadContainer.height = height;
+    downloadCanvasAsPNG(app.view, seed + "_" + page);
   }
 }
 
