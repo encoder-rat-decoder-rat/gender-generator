@@ -20,7 +20,6 @@ import GooeyFilter from "./GooeyFilter.js";
 import {
   drawFace,
   startWebcam,
-  getSizeFromBoundingBox,
   positionFaceInBounds,
   getFaceFromMedia,
   redrawFace,

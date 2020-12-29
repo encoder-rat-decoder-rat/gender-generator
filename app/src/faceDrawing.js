@@ -99,13 +99,18 @@ export function redrawFace({ app, featureContainer, prediction }) {
         } else {
           relativeCoords = UV_COORDS[point];
         }
-        featurePoint.position.set(
-          ...convertUVToContainer(relativeCoords, [
-            app.renderer.width,
-            app.renderer.height,
-          ])
-        );
+        const position = convertUVToContainer(relativeCoords, [
+          app.renderer.width,
+          app.renderer.height,
+        ]);
 
+        // Move slowly to the point
+        featurePoint.position.set(
+          featurePoint.position.x -
+            (featurePoint.position.x - position[0]) * 0.1,
+          featurePoint.position.y -
+            (featurePoint.position.y - position[1]) * 0.1
+        );
         featurePoint.icon.position.set(featurePoint.x, featurePoint.y);
       });
     }
