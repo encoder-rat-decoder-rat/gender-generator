@@ -4,6 +4,8 @@ import { MESH_ANNOTATIONS } from "@tensorflow-models/face-landmarks-detection/di
 const faceLandmarksDetection = require("@tensorflow-models/face-landmarks-detection");
 
 /**
+ * Gets the size from out tensor flow bounding box
+ *
  * @param {Object} boundingBox
  * @param {Number} boundingBox.topLeft The top left coordinate of the container
  * @param {Number} boundingBox.bottomRight The bottom right coordinate of the container
@@ -27,10 +29,11 @@ export function getSizeFromBoundingBox({ topLeft, bottomRight }) {
  * @param {Number} containerSize[1] The height value of the container
  */
 function convertUVToContainer([x, y], [width, height]) {
-  return [x * width - width / 2, y * height - height / 2];
+  return [x * width, y * height];
 }
 
 /**
+ * Converts the tensor flow mesh to a relative (0->1) position
  *
  * @param {Array} point
  * @param {Number} point[0] The x value of the point
@@ -39,9 +42,42 @@ function convertUVToContainer([x, y], [width, height]) {
  * @param {Number} boundingBox.topLeft The top left coordinate of the container
  * @param {Number} boundingBox.bottomRight The bottom right coordinate of the container
  */
-function convertScaledMeshToRelative([x, y], boundingBox) {
+function convertMeshToRelative([x, y], boundingBox) {
   const { width, height } = getSizeFromBoundingBox(boundingBox);
-  return [(x - width) / width, (y - height) / height];
+  return [
+    (x - boundingBox.topLeft[0]) / width,
+    (y - boundingBox.topLeft[1]) / height,
+  ];
+}
+
+function getContainerSize(app, prediction) {
+  let container = [];
+  if (prediction) {
+    const { width, height } = getSizeFromBoundingBox(prediction.boundingBox);
+    const scale = Math.max(
+      app.renderer.width / width,
+      app.renderer.height / height
+    );
+    container = [width * scale, height * scale];
+  } else {
+    container = [app.renderer.width, app.renderer.height];
+  }
+
+  return container;
+}
+
+function getCirclePosition(point, prediction, container) {
+  // If the point is an array it's xyz coords, otherwise it's an index reference to UV_COORDS
+  let relativeCoords = [];
+  if (prediction) {
+    relativeCoords = convertMeshToRelative(
+      prediction.scaledMesh[point],
+      prediction.boundingBox
+    );
+  } else {
+    relativeCoords = UV_COORDS[point];
+  }
+  return convertUVToContainer(relativeCoords, container);
 }
 
 /**
@@ -82,29 +118,35 @@ export function createPoint(point, spritesheet, seededRandom) {
   return [circle, icon];
 }
 
-export function redrawFace({ app, featureContainer, prediction }) {
+export function redrawFace({
+  app,
+  faceContainer,
+  featureContainer,
+  prediction,
+}) {
+  const container = getContainerSize(app, prediction);
+
+  // Center the face in the window, but move it slowly to reduce jitter
+  faceContainer.pivot.set(
+    faceContainer.pivot.x - (faceContainer.pivot.x - container[0] / 2) * 0.1,
+    faceContainer.pivot.y - (faceContainer.pivot.y - container[1] / 2) * 0.1
+  );
+  faceContainer.position.set(
+    faceContainer.position.x -
+      (faceContainer.position.x - app.renderer.width / 2) * 0.1,
+    faceContainer.position.y -
+      (faceContainer.position.y - app.renderer.height / 2) * 0.1
+  );
+
   for (const key in MESH_ANNOTATIONS) {
     const feature = featureContainer.getChildByName(key);
-    if (!key.includes("Iris") && !key.includes("silhouette")) {
+    if ((prediction && key.includes("Iris")) || !key.includes("silhouette")) {
       MESH_ANNOTATIONS[key].forEach((point, pointIndex) => {
         const featurePoint = feature.getChildAt(pointIndex);
 
-        // If the point is an array it's xyz coords, otherwise it's an index reference to UV_COORDS
-        let relativeCoords = [];
-        if (prediction) {
-          relativeCoords = convertScaledMeshToRelative(
-            prediction.mesh[point],
-            prediction.boundingBox
-          );
-        } else {
-          relativeCoords = UV_COORDS[point];
-        }
-        const position = convertUVToContainer(relativeCoords, [
-          app.renderer.width,
-          app.renderer.height,
-        ]);
+        const position = getCirclePosition(point, prediction, container);
 
-        // Move slowly to the point
+        // Move slowly to the point to reduce jitter
         featurePoint.position.set(
           featurePoint.position.x -
             (featurePoint.position.x - position[0]) * 0.1,
@@ -115,40 +157,42 @@ export function redrawFace({ app, featureContainer, prediction }) {
       });
     }
   }
+
+  const { width, height } = faceContainer.getLocalBounds();
+  // Set the scale so at least some of the edges touch the sides
+  const scale =
+    Math.min(app.renderer.width / width, app.renderer.height / height) * 1.05;
+  // Scale it slowly to reduce jitter
+  faceContainer.scale.set(
+    faceContainer.scale.x - (faceContainer.scale.x - scale) * 0.1
+  );
 }
 
 export function drawFace({
   app,
   seededRandom,
   spritesheet,
+  faceContainer,
   featureContainer,
   iconContainer,
   prediction,
 }) {
+  const container = getContainerSize(app, prediction);
+
+  // Center the face in the window
+  faceContainer.pivot.set(container[0] / 2, container[1] / 2);
+  faceContainer.position.set(app.renderer.width / 2, app.renderer.height / 2);
+
   // Add all of the important points
   for (const key in MESH_ANNOTATIONS) {
-    if (!key.includes("Iris") && !key.includes("silhouette")) {
+    if ((prediction && key.includes("Iris")) || !key.includes("silhouette")) {
       const feature = new Container();
       feature.name = key;
       const featureIcons = new Container();
       featureIcons.name = `${key}_icons`;
 
       MESH_ANNOTATIONS[key].forEach((point, pointIndex) => {
-        // If the point is an array it's xyz coords, otherwise it's an index reference to UV_COORDS
-        let relativeCoords = [];
-        if (Array.isArray(point)) {
-          relativeCoords = convertScaledMeshToRelative(
-            prediction.mesh[point],
-            prediction.boundingBox
-          );
-        } else {
-          relativeCoords = UV_COORDS[point];
-        }
-        const circlePosition = convertUVToContainer(relativeCoords, [
-          app.renderer.width,
-          app.renderer.height,
-        ]);
-
+        const circlePosition = getCirclePosition(point, prediction, container);
         const [circle, icon] = createPoint(
           circlePosition,
           spritesheet,
@@ -160,8 +204,6 @@ export function drawFace({
         featureIcons.addChild(icon);
       });
 
-      const bounds = feature.getLocalBounds();
-      feature.pivot.set(bounds.width / 2, bounds.height / 2);
       featureIcons.position = feature.position;
       featureIcons.pivot = feature.pivot;
       featureIcons.scale = feature.scale;
@@ -171,15 +213,12 @@ export function drawFace({
       iconContainer.addChild(featureIcons);
     }
   }
-}
 
-export function positionFaceInBounds(
-  faceContainer,
-  { width: appWidth, height: appHeight }
-) {
-  const scale = 1.4;
-  faceContainer.pivot.set(appWidth / -2, appHeight / -2);
-  faceContainer.position.set(appWidth * scale, appHeight * scale);
+  const { width, height } = faceContainer.getLocalBounds();
+  // Set the scale so at least some of the edges touch the sides
+  const scale =
+    Math.min(app.renderer.width / width, app.renderer.height / height) * 1.05;
+  // Scale it slowly to reduce jitter
   faceContainer.scale.set(scale);
 }
 
@@ -216,6 +255,6 @@ export async function getFaceFromMedia(video) {
 
   return modelSingleton.estimateFaces({
     input: video,
-    predictIrises: false,
+    predictIrises: true,
   });
 }

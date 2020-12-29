@@ -20,7 +20,6 @@ import GooeyFilter from "./GooeyFilter.js";
 import {
   drawFace,
   startWebcam,
-  positionFaceInBounds,
   getFaceFromMedia,
   redrawFace,
 } from "./faceDrawing.js";
@@ -85,6 +84,7 @@ const app = new Application({
   // Only resize if a width and height have not been provided
   // resizeTo: !queryParams.get("w") && !queryParams.get("h") ? window : undefined,
 });
+window.app = app;
 
 app.start();
 
@@ -152,15 +152,10 @@ async function setup() {
     app,
     seededRandom,
     spritesheet: whiteSpriteSheet,
+    faceContainer,
     featureContainer,
     iconContainer,
     prediction: predictions[0],
-  });
-
-  // Scale up the face so at least one edge is touching the sides
-  positionFaceInBounds(faceContainer, {
-    width: app.renderer.width,
-    height: app.renderer.height,
   });
 
   app.render();
@@ -174,14 +169,9 @@ async function setup() {
       if (predictions.length) {
         redrawFace({
           app,
+          faceContainer,
           featureContainer,
           prediction: predictions[0],
-        });
-
-        // Scale up the face so at least one edge is touching the sides
-        positionFaceInBounds(faceContainer, {
-          width: app.renderer.width,
-          height: app.renderer.height,
         });
 
         app.render();
