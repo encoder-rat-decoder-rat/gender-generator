@@ -4,7 +4,7 @@
  * @param      {Canvas}   The Canvas
  * @return     {Promise}  { description_of_the_return_value }
  */
-export async function downloadCanvasAsPNG(canvas) {
+export async function downloadCanvasAsPNG(canvas, filename) {
   const url = await new Promise((resolve) => {
     // toBlob(callback, mimeType, qualityArgument);
     canvas.toBlob(function (blob) {
@@ -14,7 +14,7 @@ export async function downloadCanvasAsPNG(canvas) {
 
   var a = document.createElement("a");
   document.body.appendChild(a); // This line makes it work in Firefox.
-  a.setAttribute("download", "image.jpg");
+  a.setAttribute("download", filename + ".png");
   a.setAttribute("href", url);
   a.setAttribute("target", "_blank");
   a.click();
