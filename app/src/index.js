@@ -51,7 +51,7 @@ const whiteTextureUrl = `${process.env.PUBLIC_URL}/sprite-sheet-white.png`;
 const queryParams = new URLSearchParams(window.location.search);
 const seed = parseInt(queryParams.get("seed"));
 const page = parseInt(queryParams.get("page"));
-const seededRandom = seedrandom(seed);
+const seededRandom = seedrandom(seed + page);
 
 const isDownload = queryParams.has("page");
 
