@@ -51,7 +51,7 @@ const whiteTextureUrl = `${process.env.PUBLIC_URL}/sprite-sheet-white.png`;
 const queryParams = new URLSearchParams(window.location.search);
 const seed = parseInt(queryParams.get("seed"));
 const page = parseInt(queryParams.get("page"));
-const seededRandom = seedrandom(seed + page);
+const seededRandom = seedrandom(seed);
 
 const isDownload = queryParams.has("page");
 
@@ -81,8 +81,8 @@ const app = new Application({
   backgroundColor: bgColor,
   sharedTicker: true,
   sharedLoader: true,
-  // Only resize if a width and height have not been provided
-  // resizeTo: !queryParams.get("w") && !queryParams.get("h") ? window : undefined,
+  // Only resize if we are not downloading
+  resizeTo: !isDownload ? window : undefined,
 });
 window.app = app;
 
