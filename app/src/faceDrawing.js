@@ -82,11 +82,8 @@ function getCirclePosition(point, prediction, container) {
 
 /**
  * Add a point on the face mesh
- *
- * @param      {Number}  [size=seededRandom()*14+8]  The size
  */
-export function createPoint(point, spritesheet, seededRandom) {
-  const size = seededRandom() * 30;
+export function createPoint(point, size, spritesheet, seededRandom) {
   const circle = new Graphics()
     .beginFill(0xffffff * seededRandom())
     .drawCircle(0, 0, size)
@@ -103,13 +100,8 @@ export function createPoint(point, spritesheet, seededRandom) {
   icon.anchor.set(0.5, 0.5);
   icon.position.set(circle.x, circle.y);
   icon.finalScale =
-    (size * 2 - 20) / Math.min(iconTexture.width, iconTexture.height);
+    (size * 1.1) / Math.min(iconTexture.width, iconTexture.height);
   icon.scale.set(icon.finalScale);
-
-  // Hide icon if the size is smaller than 10 for visual fidelity
-  if (size < 10) {
-    icon.visible = false;
-  }
 
   // Store the circle so we can reference it in the animation
   icon.circle = circle;
@@ -140,7 +132,12 @@ export function redrawFace({
 
   for (const key in MESH_ANNOTATIONS) {
     const feature = featureContainer.getChildByName(key);
-    if ((prediction && key.includes("Iris")) || !key.includes("silhouette")) {
+    // Only draw irises if we have a prediction (otherwise we don't have UV poiunts for irises)
+    // Don't draw the silhouette either
+    if (
+      (prediction && key.includes("Iris")) ||
+      (!key.includes("silhouette") && !key.includes("Iris"))
+    ) {
       MESH_ANNOTATIONS[key].forEach((point, pointIndex) => {
         const featurePoint = feature.getChildAt(pointIndex);
 
@@ -171,6 +168,7 @@ export function redrawFace({
 export function drawFace({
   app,
   seededRandom,
+  sizeFactor,
   spritesheet,
   faceContainer,
   featureContainer,
@@ -185,7 +183,12 @@ export function drawFace({
 
   // Add all of the important points
   for (const key in MESH_ANNOTATIONS) {
-    if ((prediction && key.includes("Iris")) || !key.includes("silhouette")) {
+    // Only draw irises if we have a prediction (otherwise we don't have UV poiunts for irises)
+    // Don't draw the silhouette either
+    if (
+      (prediction && key.includes("Iris")) ||
+      (!key.includes("silhouette") && !key.includes("Iris"))
+    ) {
       const feature = new Container();
       feature.name = key;
       const featureIcons = new Container();
@@ -193,11 +196,22 @@ export function drawFace({
 
       MESH_ANNOTATIONS[key].forEach((point, pointIndex) => {
         const circlePosition = getCirclePosition(point, prediction, container);
+
+        // Grow size proportional to the page size
+        const size = seededRandom() * sizeFactor;
+
         const [circle, icon] = createPoint(
           circlePosition,
+          size,
           spritesheet,
           seededRandom
         );
+
+        // Hide icon if the size is smaller than 1/3rd of the sizeFactor for visual fidelity
+        if (size < sizeFactor / 3) {
+          icon.visible = false;
+        }
+
         circle.name = pointIndex;
         icon.name = pointIndex;
         feature.addChild(circle);

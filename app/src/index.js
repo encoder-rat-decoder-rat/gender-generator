@@ -107,6 +107,9 @@ async function setup() {
     }
   }
 
+  // Grow circle and effect size proportional to the page size
+  const sizeFactor = 0.03 * Math.min(app.renderer.width, app.renderer.height);
+
   const whiteTexture = Loader.shared.resources[whiteTextureUrl].texture;
   const whiteSpriteSheet = new Spritesheet(whiteTexture, spritesheetJSON);
 
@@ -125,7 +128,7 @@ async function setup() {
 
   // Add visual filters
   const blurFilter = new filters.BlurFilter();
-  blurFilter.blur = 30;
+  blurFilter.blur = sizeFactor;
   blurFilter.quality = 7;
 
   const gooeyFilter = new GooeyFilter();
@@ -151,6 +154,7 @@ async function setup() {
   drawFace({
     app,
     seededRandom,
+    sizeFactor,
     spritesheet: whiteSpriteSheet,
     faceContainer,
     featureContainer,
