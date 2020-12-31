@@ -9,28 +9,27 @@ import {
   Spritesheet,
   settings,
   utils,
+  ENV,
 } from "pixi.js";
-import * as PIXI from "pixi.js";
 import { DotFilter } from "@pixi/filter-dot";
 import { MultiColorReplaceFilter } from "@pixi/filter-multi-color-replace";
 
 import seedrandom from "seedrandom";
 
 import GooeyFilter from "./GooeyFilter.js";
-import {
-  drawFace,
-  startWebcam,
-  getFaceFromMedia,
-  redrawFace,
-} from "./faceDrawing.js";
+import { drawFace, getFaceFromMedia, redrawFace } from "./faceDrawing.js";
 import { contrast } from "./utils.js";
+import { startWebcam } from "./mediaSource.js";
+import { generateFaceCanvas } from "./generateFace.js";
 
 import { downloadCanvasAsPNG } from "./downloadFrame.js";
 import spritesheetJSON from "./spritesheet.json";
 
 require("@tensorflow/tfjs-backend-webgl");
 
-window.PIXI = PIXI;
+// Pixi.js settings
+settings.FAIL_IF_MAJOR_PERFORMANCE_CAVEAT = false;
+settings.PREFER_ENV = ENV.WEBGL_LEGACY;
 settings.FILTER_RESOLUTION = 2;
 
 const whiteTextureUrl = `${process.env.PUBLIC_URL}/sprite-sheet-white.png`;
@@ -99,11 +98,21 @@ document.body.appendChild(app.view);
 
 async function setup() {
   let faceSource = null;
-  if (!isDownload) {
+
+  // If we're downloading the image, use our generated face
+  if (isDownload) {
+    faceSource = generateFaceCanvas(seededRandom);
+    // Otherwise attempt to get a webcam feed
+  } else {
     try {
       faceSource = await startWebcam();
-    } catch (e) {
-      console.info("Cannot use webcam for source, falling back to default");
+    } catch (error) {
+      console.info(
+        "Cannot use webcam for source, falling back to default",
+        error
+      );
+      // If this doesn't work, fallback to the generated face
+      faceSource = generateFaceCanvas(seededRandom);
     }
   }
 
