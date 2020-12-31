@@ -3,6 +3,25 @@ import { UV_COORDS } from "@tensorflow-models/face-landmarks-detection/dist/medi
 import { MESH_ANNOTATIONS } from "@tensorflow-models/face-landmarks-detection/dist/mediapipe-facemesh/keypoints.js";
 const faceLandmarksDetection = require("@tensorflow-models/face-landmarks-detection");
 
+// Add default UVs for Irises (they are not currently provided)
+const irisUVCoords = {
+  // Left Iris
+  468: [0.576, 0.426],
+  469: [0.567, 0.425],
+  470: [0.578, 0.416],
+  471: [0.586, 0.427],
+  472: [0.574, 0.436],
+  // Right Iris
+  473: [0.418, 0.427],
+  474: [0.432, 0.426],
+  475: [0.417, 0.414],
+  476: [0.404, 0.429],
+  477: [0.42, 0.44],
+};
+for (const index in irisUVCoords) {
+  UV_COORDS[index] = irisUVCoords[index];
+}
+
 /**
  * Gets the size from out tensor flow bounding box
  *
@@ -132,12 +151,8 @@ export function redrawFace({
 
   for (const key in MESH_ANNOTATIONS) {
     const feature = featureContainer.getChildByName(key);
-    // Only draw irises if we have a prediction (otherwise we don't have UV poiunts for irises)
-    // Don't draw the silhouette either
-    if (
-      (prediction && key.includes("Iris")) ||
-      (!key.includes("silhouette") && !key.includes("Iris"))
-    ) {
+    // Don't draw the silhouette
+    if (!key.includes("silhouette")) {
       MESH_ANNOTATIONS[key].forEach((point, pointIndex) => {
         const featurePoint = feature.getChildAt(pointIndex);
 
@@ -183,12 +198,8 @@ export function drawFace({
 
   // Add all of the important points
   for (const key in MESH_ANNOTATIONS) {
-    // Only draw irises if we have a prediction (otherwise we don't have UV poiunts for irises)
-    // Don't draw the silhouette either
-    if (
-      (prediction && key.includes("Iris")) ||
-      (!key.includes("silhouette") && !key.includes("Iris"))
-    ) {
+    // Don't draw the silhouette
+    if (!key.includes("silhouette")) {
       const feature = new Container();
       feature.name = key;
       const featureIcons = new Container();
@@ -234,29 +245,6 @@ export function drawFace({
     Math.min(app.renderer.width / width, app.renderer.height / height) * 1.05;
   // Scale it slowly to reduce jitter
   faceContainer.scale.set(scale);
-}
-
-export async function startWebcam() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: true,
-    });
-    const video = document.createElement("video");
-    // TODO: Reject on timeout
-    await new Promise((resolve, reject) => {
-      video.addEventListener("loadedmetadata", async () => {
-        await video.play();
-        resolve();
-      });
-      video.srcObject = stream;
-    });
-
-    return video;
-  } catch (error) {
-    console.error("Cannot access a webcam: ", error);
-  }
-  return null;
 }
 
 let modelSingleton = null;
