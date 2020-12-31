@@ -25,8 +25,6 @@ import { generateFaceCanvas } from "./generateFace.js";
 import { downloadCanvasAsPNG } from "./downloadFrame.js";
 import spritesheetJSON from "./spritesheet.json";
 
-require("@tensorflow/tfjs-backend-webgl");
-
 // Pixi.js settings
 settings.FAIL_IF_MAJOR_PERFORMANCE_CAVEAT = false;
 settings.PREFER_ENV = ENV.WEBGL_LEGACY;

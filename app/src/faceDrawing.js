@@ -1,7 +1,21 @@
 import { Container, Graphics, Sprite } from "pixi.js";
 import { UV_COORDS } from "@tensorflow-models/face-landmarks-detection/dist/mediapipe-facemesh/uv_coords.js";
 import { MESH_ANNOTATIONS } from "@tensorflow-models/face-landmarks-detection/dist/mediapipe-facemesh/keypoints.js";
-const faceLandmarksDetection = require("@tensorflow-models/face-landmarks-detection");
+
+// Tensorflow JS Facial Landmark Detection:
+// https://github.com/tensorflow/tfjs-models/tree/master/face-landmarks-detection
+// Import @tensorflow/tfjs-core
+import "@tensorflow/tfjs-core";
+// Because we are using the WebGL backend:
+import "@tensorflow/tfjs-backend-webgl";
+// Require face-landmarks-detection itself
+import * as faceLandmarksDetection from "@tensorflow-models/face-landmarks-detection";
+
+// We're downloading and storing the original models for off-network access
+// The original models are located at: 'https://tfhub.dev/mediapipe/tfjs-model/facemesh/1/default/1'
+const FACEMESH_GRAPHMODEL_PATH = `${process.env.PUBLIC_URL}/tjfs-facemesh_1_default_1/model.json`;
+// and 'https://tfhub.dev/mediapipe/tfjs-model/iris/1/default/2'
+const IRIS_GRAPHMODEL_PATH = `${process.env.PUBLIC_URL}/tfjs-model_iris_1_default_2/model.json`;
 
 // Add default UVs for Irises (they are not currently provided)
 const irisUVCoords = {
@@ -251,7 +265,13 @@ let modelSingleton = null;
 export async function getFaceFromMedia(video) {
   if (!modelSingleton) {
     modelSingleton = await faceLandmarksDetection.load(
-      faceLandmarksDetection.SupportedPackages.mediapipeFacemesh
+      faceLandmarksDetection.SupportedPackages.mediapipeFacemesh,
+      {
+        shouldLoadIrisModel: true,
+        maxFaces: 1,
+        modelUrl: FACEMESH_GRAPHMODEL_PATH,
+        irisModelUrl: IRIS_GRAPHMODEL_PATH,
+      }
     );
   }
 
