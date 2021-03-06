@@ -6,8 +6,9 @@ import { MESH_ANNOTATIONS } from "@tensorflow-models/face-landmarks-detection/di
 // https://github.com/tensorflow/tfjs-models/tree/master/face-landmarks-detection
 // Import @tensorflow/tfjs-core
 import "@tensorflow/tfjs-core";
-// Because we are using the WebGL backend:
+// Adds the WEBGL backend to the global backend registry.
 import "@tensorflow/tfjs-backend-webgl";
+import "@tensorflow/tfjs-backend-cpu";
 // Require face-landmarks-detection itself
 import * as faceLandmarksDetection from "@tensorflow-models/face-landmarks-detection";
 
@@ -150,6 +151,8 @@ export function redrawFace({
   prediction,
 }) {
   const container = getContainerSize(app, prediction);
+  // The amount we need to scale up the positions based on the scale of the app
+  const appScale = app.stage.scale;
 
   // Center the face in the window, but move it slowly to reduce jitter
   faceContainer.pivot.set(
@@ -158,9 +161,12 @@ export function redrawFace({
   );
   faceContainer.position.set(
     faceContainer.position.x -
-      (faceContainer.position.x - app.renderer.width / 2) * 0.1,
+      (faceContainer.position.x - (app.renderer.width * (1 / appScale.x)) / 2) *
+        0.1,
     faceContainer.position.y -
-      (faceContainer.position.y - app.renderer.height / 2) * 0.1
+      (faceContainer.position.y -
+        (app.renderer.height * (1 / appScale.y)) / 2) *
+        0.1
   );
 
   for (const key in MESH_ANNOTATIONS) {
@@ -187,7 +193,9 @@ export function redrawFace({
   const { width, height } = faceContainer.getLocalBounds();
   // Set the scale so at least some of the edges touch the sides
   const scale =
-    Math.min(app.renderer.width / width, app.renderer.height / height) * 1.05;
+    Math.min(app.renderer.width / width, app.renderer.height / height) *
+    1.05 *
+    (1 / appScale.x);
   // Scale it slowly to reduce jitter
   faceContainer.scale.set(
     faceContainer.scale.x - (faceContainer.scale.x - scale) * 0.1
@@ -206,6 +214,9 @@ export function drawFace({
 }) {
   const container = getContainerSize(app, prediction);
 
+  // The amount we need to scale up the positions based on the scale of the app
+  const appScale = app.stage.scale;
+
   // Center the face in the window
   faceContainer.pivot.set(container[0] / 2, container[1] / 2);
   faceContainer.position.set(app.renderer.width / 2, app.renderer.height / 2);
@@ -223,7 +234,7 @@ export function drawFace({
         const circlePosition = getCirclePosition(point, prediction, container);
 
         // Grow size proportional to the page size
-        const size = seededRandom() * sizeFactor;
+        const size = seededRandom() * sizeFactor * (1 / appScale.x);
 
         const [circle, icon] = createPoint(
           circlePosition,
@@ -256,7 +267,9 @@ export function drawFace({
   const { width, height } = faceContainer.getLocalBounds();
   // Set the scale so at least some of the edges touch the sides
   const scale =
-    Math.min(app.renderer.width / width, app.renderer.height / height) * 1.05;
+    Math.min(app.renderer.width / width, app.renderer.height / height) *
+    1.05 *
+    (1 / appScale.x);
   // Scale it slowly to reduce jitter
   faceContainer.scale.set(scale);
 }

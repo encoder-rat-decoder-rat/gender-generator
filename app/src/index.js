@@ -3,13 +3,13 @@ import "./index.css";
 import {
   Application,
   Container,
+  Graphics,
   Loader,
   filters,
   Ticker,
   Spritesheet,
   settings,
   utils,
-  ENV,
 } from "pixi.js";
 import { DotFilter } from "@pixi/filter-dot";
 import { MultiColorReplaceFilter } from "@pixi/filter-multi-color-replace";
@@ -27,7 +27,6 @@ import spritesheetJSON from "./spritesheet.json";
 
 // Pixi.js settings
 settings.FAIL_IF_MAJOR_PERFORMANCE_CAVEAT = false;
-settings.PREFER_ENV = ENV.WEBGL_LEGACY;
 settings.FILTER_RESOLUTION = 2;
 
 const whiteTextureUrl = `${process.env.PUBLIC_URL}/sprite-sheet-white.png`;
@@ -83,6 +82,45 @@ const app = new Application({
 });
 window.app = app;
 
+// Currently not using this, but it's an optimization that is available!
+// let applicationScale = 1;
+// const setScale = (scale) => {
+//   const { width, height } = app.renderer.view;
+//   const scaleChange = scale / applicationScale;
+//   // You need to set the resolution before resize as it factors into the resizing logic
+//   app.renderer.resize(width * scaleChange, height * scaleChange);
+//   app.stage.scale.set(scale, scale);
+//   app.render();
+//   applicationScale = scale;
+// }
+// if (!utils.isMobile.phone) {
+//   setScale(.7)
+// }
+
+// ==============
+// Loading Spinner
+// ==============
+
+const spinner = new Graphics()
+  .beginFill(fgColor)
+  .drawCircle(0, 0, 20)
+  .endFill();
+spinner.pivot.set(0, 80);
+spinner.position.set(width / 2, height / 2);
+spinner.filters = [new filters.BlurFilter(4)];
+const spinnerAnimate = () => {
+  spinner.angle += 10;
+  const scaleChangeX = seededRandom() + 1;
+  const scaleChangeY = seededRandom() + 1;
+  spinner.scale.set(
+    spinner.scale.x - (spinner.scale.x + scaleChangeX) * 0.1,
+    spinner.scale.y - (spinner.scale.y + scaleChangeY) * 0.1
+  );
+  app.render();
+};
+Ticker.shared.add(spinnerAnimate);
+app.stage.addChild(spinner);
+
 app.start();
 
 // We don't need the default pixi application render on tick call.
@@ -104,6 +142,8 @@ async function setup() {
   } else {
     try {
       faceSource = await startWebcam();
+      // Try to get the face at least once to check that it works
+      await getFaceFromMedia(faceSource);
     } catch (error) {
       console.info(
         "Cannot use webcam for source, falling back to default",
@@ -169,14 +209,24 @@ async function setup() {
     prediction: predictions[0],
   });
 
+  spinner.renderable = false;
+  Ticker.shared.remove(spinnerAnimate);
+
   app.render();
 
   // Now that we're loaded we can download if requested
   if (isDownload) {
     downloadCanvasAsPNG(app.view, seed + "_" + page);
   } else if (faceSource) {
+    let frameCount = 0;
+    let predictions = [];
     Ticker.shared.add(async () => {
-      const predictions = await getFaceFromMedia(faceSource);
+      frameCount += 1;
+      // Only attempt to predict face position every 4 frames to up performance
+      if (!(frameCount % 4)) {
+        predictions = await getFaceFromMedia(faceSource);
+        frameCount = 0;
+      }
       if (predictions.length) {
         redrawFace({
           app,
@@ -184,9 +234,9 @@ async function setup() {
           featureContainer,
           prediction: predictions[0],
         });
-
-        app.render();
       }
+
+      app.render();
     });
   }
 }
