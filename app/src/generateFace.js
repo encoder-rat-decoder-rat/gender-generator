@@ -1,4 +1,4 @@
-import { Application, Graphics, Point, Ticker } from "pixi.js";
+import { Application, Graphics, Point, Ticker, UPDATE_PRIORITY } from "pixi.js";
 
 /**
  * Sets up transform properties used for animations on each tick
@@ -202,8 +202,8 @@ export function generateFaceCanvas(seededRandom) {
     sharedTicker: true,
     antialias: true,
   });
-
   app.start();
+  Ticker.shared.remove(app.render, app);
 
   const faceContainer = new Graphics();
   faceContainer.beginFill(0xcccccc).drawEllipse(0, 0, 200, 250).endFill();
@@ -247,45 +247,59 @@ export function generateFaceCanvas(seededRandom) {
 
   app.render();
 
+  let frameCount = 0;
+
   // Sets up an animation ticker for various ambient head movements and
-  Ticker.shared.add(() => {
-    const tickSeed = seededRandom();
-    // There's a 3% chance on every tick the face will rotate a different direction
-    if (tickSeed >= 0.98) {
-      rotateFace(faceContainer, seededRandom);
-    }
-    // There's a 5% chance on every tick the face will turn a different direction
-    // This is overlapping with rotation for smoother head movement
-    if (tickSeed >= 0.96) {
-      turnFace(faceContainer, mouth, nose, leftEye, rightEye, seededRandom);
-    }
+  Ticker.shared.add(
+    () => {
+      frameCount += 1;
+      // Only attempt to predict face position every 4 frames to up performance
+      if (frameCount % 3) {
+        return;
+      }
+      frameCount = 0;
 
-    // Change the mouth size occasionally (4%)
-    if (tickSeed >= 0.93 && tickSeed < 0.96) {
-      openMouth(mouth, seededRandom);
-    }
-    // Move the eyes occasionally (5%)
-    if (tickSeed >= 0.89 && tickSeed < 0.93) {
-      moveIris(leftEye.iris, rightEye.iris, seededRandom);
-    }
-    // Blink occasionally (1%)
-    if (tickSeed >= 0.88 && tickSeed < 0.89 && !isBlinking) {
-      blink(leftEye, rightEye);
-    }
+      const tickSeed = seededRandom();
+      // There's a 3% chance on every tick the face will rotate a different direction
+      if (tickSeed >= 0.98) {
+        rotateFace(faceContainer, seededRandom);
+      }
+      // There's a 5% chance on every tick the face will turn a different direction
+      // This is overlapping with rotation for smoother head movement
+      if (tickSeed >= 0.96) {
+        turnFace(faceContainer, mouth, nose, leftEye, rightEye, seededRandom);
+      }
 
-    // Change the scaling, rotation, and positions slowly (.1)
-    moveOnTick(faceContainer);
-    moveOnTick(mouth);
-    moveOnTick(nose);
+      // Change the mouth size occasionally (4%)
+      if (tickSeed >= 0.93 && tickSeed < 0.96) {
+        openMouth(mouth, seededRandom);
+      }
+      // Move the eyes occasionally (5%)
+      if (tickSeed >= 0.89 && tickSeed < 0.93) {
+        moveIris(leftEye.iris, rightEye.iris, seededRandom);
+      }
+      // Blink occasionally (1%)
+      if (tickSeed >= 0.88 && tickSeed < 0.89 && !isBlinking) {
+        blink(leftEye, rightEye);
+      }
 
-    // Blinking occurs faster
-    moveOnTick(rightEye, { scaleY: 0.3 });
-    moveOnTick(rightEye.iris);
+      // Change the scaling, rotation, and positions slowly (.1)
+      moveOnTick(faceContainer);
+      moveOnTick(mouth);
+      moveOnTick(nose);
 
-    // Blinking occurs faster
-    moveOnTick(leftEye, { scaleY: 0.3 });
-    moveOnTick(leftEye.iris);
-  });
+      // Blinking occurs faster
+      moveOnTick(rightEye, { scaleY: 0.3 });
+      moveOnTick(rightEye.iris);
+
+      // Blinking occurs faster
+      moveOnTick(leftEye, { scaleY: 0.3 });
+      moveOnTick(leftEye.iris);
+      app.render();
+    },
+    null,
+    UPDATE_PRIORITY.HIGH
+  );
 
   return app.view;
 }

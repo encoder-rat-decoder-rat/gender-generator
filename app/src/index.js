@@ -218,15 +218,28 @@ async function setup() {
   if (isDownload) {
     downloadCanvasAsPNG(app.view, seed + "_" + page);
   } else if (faceSource) {
-    let frameCount = 0;
+    // The current store of the predictions for drawing
     let predictions = [];
-    Ticker.shared.add(async () => {
-      frameCount += 1;
-      // Only attempt to predict face position every 4 frames to up performance
-      if (!(frameCount % 4)) {
-        predictions = await getFaceFromMedia(faceSource);
-        frameCount = 0;
+    // The current promise, which resolves when TF is done predicting
+    let predictingPromise = null;
+
+    // Once prediction is complete, then update the current predictions we are using for drawing
+    const predictionComplete = (predictionResponse) => {
+      predictions = predictionResponse;
+      predictingPromise = null;
+    };
+
+    // Ticker for redrawing
+    Ticker.shared.add((time) => {
+      console.log("tick", time);
+      // Only attempt to predict face position when it has completed the last prediction
+      if (!predictingPromise) {
+        // Don't block animation by waiting for the TF prediction
+        predictingPromise = getFaceFromMedia(faceSource).then(
+          predictionComplete
+        );
       }
+
       if (predictions.length) {
         redrawFace({
           app,
@@ -235,9 +248,8 @@ async function setup() {
           prediction: predictions[0],
         });
       }
-
       app.render();
-    });
+    }, null);
   }
 }
 

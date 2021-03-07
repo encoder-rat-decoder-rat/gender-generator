@@ -8,7 +8,6 @@ import { MESH_ANNOTATIONS } from "@tensorflow-models/face-landmarks-detection/di
 import "@tensorflow/tfjs-core";
 // Adds the WEBGL backend to the global backend registry.
 import "@tensorflow/tfjs-backend-webgl";
-import "@tensorflow/tfjs-backend-cpu";
 // Require face-landmarks-detection itself
 import * as faceLandmarksDetection from "@tensorflow-models/face-landmarks-detection";
 
