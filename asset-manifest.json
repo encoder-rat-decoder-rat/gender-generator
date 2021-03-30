@@ -1,0 +1,22 @@
+{
+  "files": {
+    "main.css": "/gender-generator/static/css/main.5a5d0b80.chunk.css",
+    "main.js": "/gender-generator/static/js/main.495cfb04.chunk.js",
+    "main.js.map": "/gender-generator/static/js/main.495cfb04.chunk.js.map",
+    "runtime-main.js": "/gender-generator/static/js/runtime-main.3ad9f63d.js",
+    "runtime-main.js.map": "/gender-generator/static/js/runtime-main.3ad9f63d.js.map",
+    "static/js/2.c9c3647d.chunk.js": "/gender-generator/static/js/2.c9c3647d.chunk.js",
+    "static/js/2.c9c3647d.chunk.js.map": "/gender-generator/static/js/2.c9c3647d.chunk.js.map",
+    "index.html": "/gender-generator/index.html",
+    "precache-manifest.6ab4aafd69132d024fd0d88bfa24725e.js": "/gender-generator/precache-manifest.6ab4aafd69132d024fd0d88bfa24725e.js",
+    "service-worker.js": "/gender-generator/service-worker.js",
+    "static/css/main.5a5d0b80.chunk.css.map": "/gender-generator/static/css/main.5a5d0b80.chunk.css.map",
+    "static/js/2.c9c3647d.chunk.js.LICENSE.txt": "/gender-generator/static/js/2.c9c3647d.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.3ad9f63d.js",
+    "static/js/2.c9c3647d.chunk.js",
+    "static/css/main.5a5d0b80.chunk.css",
+    "static/js/main.495cfb04.chunk.js"
+  ]
+}
