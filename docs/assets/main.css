@@ -387,6 +387,8 @@ table td {
 .page-content {
   padding: 30px 0;
   flex: 1;
+  width: 800px;
+  margin: 0 auto;
 }
 
 .page-heading {
@@ -731,6 +733,14 @@ table td {
 
 body {
   font: Baskerville, ‘Times New Roman’, Times, serif;
+}
+p {
+  font-size: 16px;
+  color: navy;
+}
+h5 {
+  font-size: 48px;
+  color: rgb(51, 0, 94);
 }
 h6 {
   font-size: 36px;
