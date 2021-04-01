@@ -736,13 +736,13 @@ body {
 }
 p {
   font-size: 16px;
-  color: navy;
+  /* color: navy; */
 }
 h5 {
   font-size: 48px;
-  color: rgb(51, 0, 94);
+  /* color: rgb(51, 0, 94); */
 }
 h6 {
   font-size: 36px;
-  color: forestgreen;
+  /* color: forestgreen; */
 }
