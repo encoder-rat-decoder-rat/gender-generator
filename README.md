@@ -11,3 +11,9 @@ To run the app, run this in the `app` directory:
 
 # In Browser
 Webcam access is not required for GG to run.
+
+# About us
+[Learn more](https://encoder-rat-decoder-rat.github.io/gender-generator/) about GG and ERDR on our site, where we explain some of the theory behind the project and link to reference work.
+
+# See the work in situ
+This project was commissioned by MIT for the the Generative Unfoldings exhibition. You can [view Gender Generator](https://generative-unfoldings.mit.edu/works/gender-generator/view.html) on the symposium site.
